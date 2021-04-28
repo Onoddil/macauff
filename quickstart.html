@@ -1,0 +1,173 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Quick Start &#8212; macauff</title>
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pyramid.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="_static/graphviz.css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Input Parameters" href="inputs.html" />
+    <link rel="prev" title="Installation" href="installation.html" />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Neuton&amp;subset=latin" type="text/css" media="screen" charset="utf-8" />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Nobile:regular,italic,bold,bolditalic&amp;subset=latin" type="text/css" media="screen" charset="utf-8" />
+<!--[if lte IE 6]>
+<link rel="stylesheet" href="_static/ie6.css" type="text/css" media="screen" charset="utf-8" />
+<![endif]-->
+
+  </head><body>
+
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="f-modindex.html" title="Fortran Module Index"
+             >fortran modules</a> |</li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="inputs.html" title="Input Parameters"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="installation.html" title="Installation"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">macauff</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Quick Start</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="quick-start">
+<h1>Quick Start<a class="headerlink" href="#quick-start" title="Permalink to this headline">¶</a></h1>
+<p>To get started quickly with <code class="docutils literal notranslate"><span class="pre">macauff</span></code>, you will need nine items: three binary, <code class="docutils literal notranslate"><span class="pre">.npy</span></code> files for each of the two catalogues to be cross-matched, and three input plain text files.</p>
+<div class="section" id="input-data">
+<h2>Input Data<a class="headerlink" href="#input-data" title="Permalink to this headline">¶</a></h2>
+<p>The three input files must be contained within a single folder, with the respective names:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">con_cat_astro</span></code>, which must be of shape <code class="docutils literal notranslate"><span class="pre">(N,</span> <span class="pre">3)</span></code>, and contain, for each of the <code class="docutils literal notranslate"><span class="pre">N</span></code> objects to be matched in this catalogue, two astrometric position coordinates: the azimuthal angle (typically Right Ascension or Longitude) and polar angle (typically Declination or Latitude) – both in degrees – and a single, <em>circular</em> astrometric uncertainty, in arcseconds. If your data are described by covariance matrices for their uncertainty, then we require the average of the semi-major and semi-minor axes.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">con_cat_photo</span></code>, of shape <code class="docutils literal notranslate"><span class="pre">(N,</span> <span class="pre">F)</span></code> for a catalogue with <code class="docutils literal notranslate"><span class="pre">F</span></code> filters available for use. If a detection is not available for any reason – either the source is below the detection limit of the survey, or it was removed for any reason during the catalogue creation process – it must be replaced with a <code class="docutils literal notranslate"><span class="pre">NaN</span></code> value.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">magref</span></code>, of shape <code class="docutils literal notranslate"><span class="pre">(N,)</span></code>. This “magnitude reference” array contains, for each of the <code class="docutils literal notranslate"><span class="pre">N</span></code> elements, the best available of the 1 to <code class="docutils literal notranslate"><span class="pre">F</span></code> detections of that object. Best is a subjective term, and left to the user, but general considerations to take into account are the closeness of the wavelength coverage to the opposing catalogue (where more similar wavelength ranges are better), quality of the detection, or if the source suffered any artefacts during its observation that may affect the photometry.</p></li>
+</ul>
+<p>These files should be present for each catalogue, in separate folders.</p>
+<p>An example function to create simple test catalogues is available <a class="reference internal" href="api/macauff.tests.generate_random_data.html#macauff.tests.generate_random_data" title="macauff.tests.generate_random_data"><code class="xref py py-func docutils literal notranslate"><span class="pre">here</span></code></a>, and can be imported within Python as:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">macauff.tests</span> <span class="kn">import</span> <span class="n">generate_random_data</span>
+</pre></div>
+</div>
+<p>and called with</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">num_a_source</span><span class="p">,</span> <span class="n">num_b_source</span><span class="p">,</span> <span class="n">num_common</span> <span class="o">=</span> <span class="mi">50</span><span class="p">,</span> <span class="mi">100</span><span class="p">,</span> <span class="mi">40</span>
+<span class="n">extent</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mf">0.25</span><span class="p">,</span> <span class="mi">50</span><span class="p">,</span> <span class="mf">50.3</span><span class="p">]</span>
+<span class="n">num_filters_a</span><span class="p">,</span> <span class="n">num_filters_b</span> <span class="o">=</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">2</span>
+<span class="n">a_uncert</span><span class="p">,</span> <span class="n">b_uncert</span> <span class="o">=</span> <span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.3</span>
+<span class="n">a_cat_path</span><span class="p">,</span> <span class="n">b_cat_path</span> <span class="o">=</span> <span class="s1">&#39;name_of_a_folder&#39;</span><span class="p">,</span> <span class="s1">&#39;name_of_b_folder&#39;</span>
+<span class="n">generate_random_data</span><span class="p">(</span><span class="n">num_a_source</span><span class="p">,</span> <span class="n">num_b_source</span><span class="p">,</span> <span class="n">num_common</span><span class="p">,</span> <span class="n">extent</span><span class="p">,</span> <span class="n">num_filters_a</span><span class="p">,</span>
+                     <span class="n">num_filters_b</span><span class="p">,</span> <span class="n">a_uncert</span><span class="p">,</span> <span class="n">b_uncert</span><span class="p">,</span> <span class="n">a_cat_path</span><span class="p">,</span> <span class="n">b_cat_path</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>This will save the appropriate three files – <code class="docutils literal notranslate"><span class="pre">con_cat_astro</span></code>, <code class="docutils literal notranslate"><span class="pre">con_cat_photo</span></code>, and <code class="docutils literal notranslate"><span class="pre">magref</span></code> – in the respective catalogue path folders. Additionally, it will save the (zero-indexed) indices in each catalogue that correspond to the counterpart sources in the two catalogues, for “ground truth” comparison.</p>
+</div>
+<div class="section" id="input-parameters">
+<h2>Input Parameters<a class="headerlink" href="#input-parameters" title="Permalink to this headline">¶</a></h2>
+<p>Once you have your catalogue files, you will next require the files containing the input parameters. Examples of these files can be found in the <code class="docutils literal notranslate"><span class="pre">macauff</span></code> test data folder, for <a class="reference external" href="https://raw.githubusercontent.com/Onoddil/macauff/master/macauff/tests/data/cat_a_params.txt">catalogue “a”</a>, <a class="reference external" href="https://raw.githubusercontent.com/Onoddil/macauff/master/macauff/tests/data/cat_b_params.txt">catalogue “b”</a>, and the <a class="reference external" href="https://raw.githubusercontent.com/Onoddil/macauff/master/macauff/tests/data/crossmatch_params.txt">common cross-match</a> parameters.</p>
+<p>These files are the only inputs to <a class="reference internal" href="api/macauff.CrossMatch.html#macauff.CrossMatch" title="macauff.CrossMatch"><code class="xref py py-obj docutils literal notranslate"><span class="pre">CrossMatch</span></code></a>, the main class for performing a cross-match between the two catalogues.</p>
+<p>By default, the parameters in the files above are set up such that a cross-match will be performed in the equatorial coordinate frame region <span class="math notranslate nohighlight">\(131 \leq \alpha \leq 138,\ -3 \leq \delta \leq 3\)</span>. Thus, depending on the coordinates you used when calling <a class="reference internal" href="api/macauff.tests.generate_random_data.html#macauff.tests.generate_random_data" title="macauff.tests.generate_random_data"><code class="xref py py-obj docutils literal notranslate"><span class="pre">generate_random_data</span></code></a>, you may wish to edit <code class="docutils literal notranslate"><span class="pre">cross_match_extent</span></code> and <code class="docutils literal notranslate"><span class="pre">cf_region_points</span></code> within <code class="docutils literal notranslate"><span class="pre">crossmatch_params.txt</span></code>, to match your chosen sky coordinates.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Discussion of the input parameters available in the catalogue-specific and joint match-specific input files is provided in more detail <a class="reference internal" href="inputs.html"><span class="doc">here</span></a>.</p>
+</div>
+</div>
+<div class="section" id="running-the-matches">
+<h2>Running the Matches<a class="headerlink" href="#running-the-matches" title="Permalink to this headline">¶</a></h2>
+<p>With both your data and input files, you are now ready to perform your first cross-match! This should be as straightforward as running</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">macauff</span> <span class="kn">import</span> <span class="n">CrossMatch</span>
+<span class="n">joint_file_path</span> <span class="o">=</span> <span class="s1">&#39;some_location_here/common_match_parameters.txt&#39;</span>
+<span class="n">cat_a_file</span><span class="p">,</span> <span class="n">cat_b_file</span> <span class="o">=</span> <span class="s1">&#39;loc_one/catalogue_a_params.txt&#39;</span><span class="p">,</span> <span class="s1">&#39;loc_two/catalogue_b_params.txt&#39;</span>
+<span class="n">cross_match</span> <span class="o">=</span> <span class="n">CrossMatch</span><span class="p">(</span><span class="n">joint_folder_path</span><span class="p">,</span> <span class="n">cat_a_file</span><span class="p">,</span> <span class="n">cat_b_file</span><span class="p">)</span>
+<span class="n">cross_match</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>which will save all intermediate match data to the <code class="docutils literal notranslate"><span class="pre">joint_folder_path</span></code> parameter in <code class="docutils literal notranslate"><span class="pre">joint_file_path</span></code>, and eventually produce a list of indices of matches for the two catalogues. Within Python these can be loaded by calling the original binary files:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="n">a</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{}</span><span class="s1">/con_cat_astro.npy&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">a_cat_folder_path</span><span class="p">))</span>
+<span class="n">b</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{}</span><span class="s1">/con_cat_astro.npy&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">b_cat_folder_path</span><span class="p">))</span>
+<span class="n">cat_a_match_inds</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{}</span><span class="s1">/pairing/ac.npy&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">joint_folder_path</span><span class="p">))</span>
+<span class="n">cat_b_match_inds</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{}</span><span class="s1">/pairing/bc.npy&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">joint_folder_path</span><span class="p">))</span>
+
+<span class="n">a_matches</span><span class="p">,</span> <span class="n">b_matches</span> <span class="o">=</span> <span class="n">a</span><span class="p">[</span><span class="n">cat_a_match_inds</span><span class="p">],</span> <span class="n">b</span><span class="p">[</span><span class="n">cat_b_match_inds</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>You can then, for example, calculate the on-sky separations between these sources:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">macauff.misc_functions_fortran</span> <span class="kn">import</span> <span class="n">misc_functions_fortan</span> <span class="k">as</span> <span class="n">mff</span>
+<span class="n">arcsec_seps</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">3600</span> <span class="o">*</span> <span class="n">mff</span><span class="o">.</span><span class="n">haversine_wrapper</span><span class="p">(</span><span class="n">a_matches</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">b_matches</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span>
+                        <span class="n">a_matches</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">b_matches</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">1</span><span class="p">])</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">a_matches</span><span class="p">))])</span>
+</pre></div>
+</div>
+</div>
+</div>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Quick Start</a><ul>
+<li><a class="reference internal" href="#input-data">Input Data</a></li>
+<li><a class="reference internal" href="#input-parameters">Input Parameters</a></li>
+<li><a class="reference internal" href="#running-the-matches">Running the Matches</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="f-modindex.html" title="Fortran Module Index"
+             >fortran modules</a> |</li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="inputs.html" title="Input Parameters"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="installation.html" title="Installation"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">macauff</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Quick Start</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2021, Tom J Wilson.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 3.5.4.
+    </div>
+  </body>
+</html>

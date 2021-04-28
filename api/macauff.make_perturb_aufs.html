@@ -1,0 +1,202 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>make_perturb_aufs &#8212; macauff</title>
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pyramid.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../_static/graphviz.css" />
+    <script id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="set_list" href="macauff.set_list.html" />
+    <link rel="prev" title="make_island_groupings" href="macauff.make_island_groupings.html" />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Neuton&amp;subset=latin" type="text/css" media="screen" charset="utf-8" />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Nobile:regular,italic,bold,bolditalic&amp;subset=latin" type="text/css" media="screen" charset="utf-8" />
+<!--[if lte IE 6]>
+<link rel="stylesheet" href="../_static/ie6.css" type="text/css" media="screen" charset="utf-8" />
+<![endif]-->
+
+  </head><body>
+
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../f-modindex.html" title="Fortran Module Index"
+             >fortran modules</a> |</li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="macauff.set_list.html" title="set_list"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="macauff.make_island_groupings.html" title="make_island_groupings"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">macauff</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../macauff.html" accesskey="U"><code class="docutils literal notranslate"><span class="pre">macauff</span></code> Documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">make_perturb_aufs</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="make-perturb-aufs">
+<h1>make_perturb_aufs<a class="headerlink" href="#make-perturb-aufs" title="Permalink to this headline">¶</a></h1>
+<dl class="py function">
+<dt id="macauff.make_perturb_aufs">
+<code class="sig-prename descclassname"><span class="pre">macauff.</span></code><code class="sig-name descname"><span class="pre">make_perturb_aufs</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">auf_folder</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cat_folder</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filters</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">auf_points</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">r</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rho</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">drho</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">which_cat</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">include_perturb_auf</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mem_chunk_num</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tri_download_flag</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">delta_mag_cuts</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">psf_fwhms</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tri_set_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tri_filt_num</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tri_filt_names</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">auf_region_frame</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_trials</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">j0s</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">density_mags</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dm_max</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">d_mag</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">compute_local_density</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">density_radius</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/macauff/perturbation_auf.html#make_perturb_aufs"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#macauff.make_perturb_aufs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to perform the creation of the blended object perturbation component
+of the AUF.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>auf_folder</strong><span class="classifier">string</span></dt><dd><p>The overall folder into which to create filter-pointing folders and save
+individual simulation files.</p>
+</dd>
+<dt><strong>cat_folder</strong><span class="classifier">string</span></dt><dd><p>The folder that the photometric catalogue being simulated for perturbation
+AUF component is stored in.</p>
+</dd>
+<dt><strong>filters</strong><span class="classifier">list of strings or numpy.ndarray of strings</span></dt><dd><p>An array containing the list of filters in this catalogue to create
+simulated AUF components for.</p>
+</dd>
+<dt><strong>auf_points</strong><span class="classifier">numpy.ndarray</span></dt><dd><p>Two-dimensional array containing pairs of coordinates at which to evaluate
+the perturbation AUF components.</p>
+</dd>
+<dt><strong>r</strong><span class="classifier">numpy.ndarray</span></dt><dd><p>The real-space coordinates for the Hankel transformations used in AUF-AUF
+convolution.</p>
+</dd>
+<dt><strong>dr</strong><span class="classifier">numpy.ndarray</span></dt><dd><p>The spacings between <code class="docutils literal notranslate"><span class="pre">r</span></code> elements.</p>
+</dd>
+<dt><strong>rho</strong><span class="classifier">numpy.ndarray</span></dt><dd><p>The fourier-space coordinates for Hankel transformations.</p>
+</dd>
+<dt><strong>drho</strong><span class="classifier">numpy.ndarray</span></dt><dd><p>The spacings between <code class="docutils literal notranslate"><span class="pre">rho</span></code> elements.</p>
+</dd>
+<dt><strong>which_cat</strong><span class="classifier">string</span></dt><dd><p>Indicator as to whether these perturbation AUFs are for catalogue “a”
+or catalogue “b” within the cross-match process.</p>
+</dd>
+<dt><strong>include_perturb_auf</strong><span class="classifier">boolean</span></dt><dd><p><code class="docutils literal notranslate"><span class="pre">True</span></code> or <code class="docutils literal notranslate"><span class="pre">False</span></code> flag indicating whether perturbation component of the
+AUF should be used or not within the cross-match process.</p>
+</dd>
+<dt><strong>mem_chunk_num</strong><span class="classifier">int</span></dt><dd><p>Number of individual sub-sections to break catalogue into for memory
+saving purposes.</p>
+</dd>
+<dt><strong>tri_download_flag</strong><span class="classifier">boolean, optional</span></dt><dd><p>A <code class="docutils literal notranslate"><span class="pre">True</span></code>/<code class="docutils literal notranslate"><span class="pre">False</span></code> flag, whether to re-download TRILEGAL simulated star
+counts or not if a simulation already exists in a given folder. Only
+needed if <code class="docutils literal notranslate"><span class="pre">include_perturb_auf</span></code> is True.</p>
+</dd>
+<dt><strong>delta_mag_cuts</strong><span class="classifier">numpy.ndarray, optional</span></dt><dd><p>Array of magnitude offsets corresponding to relative fluxes of perturbing
+sources, for consideration of relative contamination chances. Must be given
+if <code class="docutils literal notranslate"><span class="pre">include_perturb_auf</span></code> is <code class="docutils literal notranslate"><span class="pre">True</span></code>.</p>
+</dd>
+<dt><strong>psf_fwhms</strong><span class="classifier">numpy.ndarray, optional</span></dt><dd><p>Array of full width at half-maximums for each filter in <code class="docutils literal notranslate"><span class="pre">filters</span></code>. Only
+required if <code class="docutils literal notranslate"><span class="pre">include_perturb_auf</span></code> is True; defaults to <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p>
+</dd>
+<dt><strong>tri_set_name</strong><span class="classifier">string, optional</span></dt><dd><p>Name of the filter set to generate simulated TRILEGAL Galactic source
+counts from. If <code class="docutils literal notranslate"><span class="pre">include_perturb_auf</span></code> and <code class="docutils literal notranslate"><span class="pre">tri_download_flag</span></code> are
+<code class="docutils literal notranslate"><span class="pre">True</span></code>, this must be set.</p>
+</dd>
+<dt><strong>tri_filt_num</strong><span class="classifier">string, optional</span></dt><dd><p>Column number of the filter defining the magnitude limit of simulated
+TRILEGAL Galactic sources. If <code class="docutils literal notranslate"><span class="pre">include_perturb_auf</span></code> and
+<code class="docutils literal notranslate"><span class="pre">tri_download_flag</span></code> are <code class="docutils literal notranslate"><span class="pre">True</span></code>, this must be set.</p>
+</dd>
+<dt><strong>tri_filt_names</strong><span class="classifier">list or array of strings, optional</span></dt><dd><p>List of filter names in the TRILEGAL filterset defined in <code class="docutils literal notranslate"><span class="pre">tri_set_name</span></code>,
+in the same order as provided in <code class="docutils literal notranslate"><span class="pre">psf_fwhms</span></code>. If <code class="docutils literal notranslate"><span class="pre">include_perturb_auf</span></code>
+and <code class="docutils literal notranslate"><span class="pre">tri_download_flag</span></code> are <code class="docutils literal notranslate"><span class="pre">True</span></code>, this must be set.</p>
+</dd>
+<dt><strong>auf_region_frame</strong><span class="classifier">string, optional</span></dt><dd><p>Coordinate reference frame in which sky coordinates are defined, either
+<code class="docutils literal notranslate"><span class="pre">equatorial</span></code> or <code class="docutils literal notranslate"><span class="pre">galactic</span></code>, used to define the coordinates TRILEGAL
+simulations are generated in. If <code class="docutils literal notranslate"><span class="pre">include_perturb_auf</span></code> and
+<code class="docutils literal notranslate"><span class="pre">tri_download_flag</span></code> are <code class="docutils literal notranslate"><span class="pre">True</span></code>, this must be set.</p>
+</dd>
+<dt><strong>num_trials</strong><span class="classifier">integer, optional</span></dt><dd><p>The number of simulated PSFs to compute in the derivation of the
+perturbation component of the AUF. Must be given if <code class="docutils literal notranslate"><span class="pre">include_perturb_auf</span></code>
+is <code class="docutils literal notranslate"><span class="pre">True</span></code>.</p>
+</dd>
+<dt><strong>j0s</strong><span class="classifier">numpy.ndarray, optional</span></dt><dd><p>The Bessel Function of First Kind of Zeroth Order evaluated at each
+<code class="docutils literal notranslate"><span class="pre">r</span></code>-<code class="docutils literal notranslate"><span class="pre">rho</span></code> combination. Must be given if <code class="docutils literal notranslate"><span class="pre">include_perturb_auf</span></code>
+is <code class="docutils literal notranslate"><span class="pre">True</span></code>.</p>
+</dd>
+<dt><strong>density_mags</strong><span class="classifier">numpy.ndarray, optional</span></dt><dd><p>The faintest magnitude down to which to consider number densities of
+objects for normalisation purposes, in each filter, in the same order
+as <code class="docutils literal notranslate"><span class="pre">psf_fwhms</span></code>. Must be given if <code class="docutils literal notranslate"><span class="pre">include_perturb_auf</span></code> is <code class="docutils literal notranslate"><span class="pre">True</span></code>.
+Must be the same as were used to calculate <code class="docutils literal notranslate"><span class="pre">count_density</span></code> in
+<code class="docutils literal notranslate"><span class="pre">calculate_local_density</span></code>, if <code class="docutils literal notranslate"><span class="pre">compute_local_density</span></code> is <code class="docutils literal notranslate"><span class="pre">False</span></code>
+and pre-computed densities are being used.</p>
+</dd>
+<dt><strong>dm_max</strong><span class="classifier">float, optional</span></dt><dd><p>The maximum magnitude difference, or relative flux, down to which to
+consider simulated blended sources. Must be given if
+<code class="docutils literal notranslate"><span class="pre">include_perturb_auf</span></code> is <code class="docutils literal notranslate"><span class="pre">True</span></code>.</p>
+</dd>
+<dt><strong>d_mag</strong><span class="classifier">float, optional</span></dt><dd><p>The resolution at which to create the TRILEGAL source density distribution.
+Must be provided if <code class="docutils literal notranslate"><span class="pre">include_perturb_auf</span></code> is <code class="docutils literal notranslate"><span class="pre">True</span></code>.</p>
+</dd>
+<dt><strong>compute_local_density</strong><span class="classifier">boolean, optional</span></dt><dd><p>Flag to indicate whether to calculate local source densities during
+the cross-match process, or whether to use pre-calculated values. Must
+be provided if <code class="docutils literal notranslate"><span class="pre">include_perturb_auf</span></code> is <code class="docutils literal notranslate"><span class="pre">True</span></code>.</p>
+</dd>
+<dt><strong>density_radius</strong><span class="classifier">float, optional</span></dt><dd><p>The astrometric distance, in degrees, within which to consider numbers
+of internal catalogue sources, from which to calculate local density.
+Must be given if both <code class="docutils literal notranslate"><span class="pre">include_perturb_auf</span></code> and
+<code class="docutils literal notranslate"><span class="pre">compute_local_density</span></code> are both <code class="docutils literal notranslate"><span class="pre">True</span></code>.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../f-modindex.html" title="Fortran Module Index"
+             >fortran modules</a> |</li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="macauff.set_list.html" title="set_list"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="macauff.make_island_groupings.html" title="make_island_groupings"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">macauff</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../macauff.html" ><code class="docutils literal notranslate"><span class="pre">macauff</span></code> Documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">make_perturb_aufs</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2021, Tom J Wilson.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 3.5.4.
+    </div>
+  </body>
+</html>

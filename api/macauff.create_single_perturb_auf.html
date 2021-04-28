@@ -1,0 +1,162 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>create_single_perturb_auf &#8212; macauff</title>
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pyramid.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../_static/graphviz.css" />
+    <script id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="make_island_groupings" href="macauff.make_island_groupings.html" />
+    <link rel="prev" title="compute_photometric_likelihoods" href="macauff.compute_photometric_likelihoods.html" />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Neuton&amp;subset=latin" type="text/css" media="screen" charset="utf-8" />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Nobile:regular,italic,bold,bolditalic&amp;subset=latin" type="text/css" media="screen" charset="utf-8" />
+<!--[if lte IE 6]>
+<link rel="stylesheet" href="../_static/ie6.css" type="text/css" media="screen" charset="utf-8" />
+<![endif]-->
+
+  </head><body>
+
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../f-modindex.html" title="Fortran Module Index"
+             >fortran modules</a> |</li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="macauff.make_island_groupings.html" title="make_island_groupings"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="macauff.compute_photometric_likelihoods.html" title="compute_photometric_likelihoods"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">macauff</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../macauff.html" accesskey="U"><code class="docutils literal notranslate"><span class="pre">macauff</span></code> Documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">create_single_perturb_auf</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="create-single-perturb-auf">
+<h1>create_single_perturb_auf<a class="headerlink" href="#create-single-perturb-auf" title="Permalink to this headline">¶</a></h1>
+<dl class="py function">
+<dt id="macauff.create_single_perturb_auf">
+<code class="sig-prename descclassname"><span class="pre">macauff.</span></code><code class="sig-name descname"><span class="pre">create_single_perturb_auf</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tri_folder</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filt</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">r</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rho</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">drho</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">j0s</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_trials</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">psf_fwhm</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">header</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">density_mag</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">a_photo</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">localN</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dm_max</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">d_mag</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mag_cut</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/macauff/perturbation_auf.html#create_single_perturb_auf"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#macauff.create_single_perturb_auf" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates the associated parameters for describing a single perturbation AUF
+component, for a single sky position.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>tri_folder</strong><span class="classifier">string</span></dt><dd><p>Folder where the TRILEGAL datafile is stored, and where the individual
+filter-specific perturbation AUF simulations should be saved.</p>
+</dd>
+<dt><strong>filt</strong><span class="classifier">float</span></dt><dd><p>Filter for which to simulate the AUF component.</p>
+</dd>
+<dt><strong>r</strong><span class="classifier">numpy.ndarray</span></dt><dd><p>Array of real-space positions.</p>
+</dd>
+<dt><strong>dr</strong><span class="classifier">numpy.ndarray</span></dt><dd><p>Array of the bin sizes of each <code class="docutils literal notranslate"><span class="pre">r</span></code> position.</p>
+</dd>
+<dt><strong>rho</strong><span class="classifier">numpy.ndarray</span></dt><dd><p>Fourier-space coordinates at which to sample the fourier transformation
+of the distribution of perturbations due to blended sources.</p>
+</dd>
+<dt><strong>drho</strong><span class="classifier">numpy.ndarray</span></dt><dd><p>Bin widths of each <code class="docutils literal notranslate"><span class="pre">rho</span></code> coordinate.</p>
+</dd>
+<dt><strong>j0s</strong><span class="classifier">numpy.ndarray</span></dt><dd><p>The Bessel Function of First Kind of Zeroth Order, evaluated at all
+<code class="docutils literal notranslate"><span class="pre">r</span></code>-<code class="docutils literal notranslate"><span class="pre">rho</span></code> combinations.</p>
+</dd>
+<dt><strong>num_trials</strong><span class="classifier">integer</span></dt><dd><p>The number of realisations of blended contaminant sources to draw
+when simulating perturbations of source positions.</p>
+</dd>
+<dt><strong>psf_fwhm</strong><span class="classifier">float</span></dt><dd><p>The full-width at half maxima of the <code class="docutils literal notranslate"><span class="pre">filt</span></code> filter.</p>
+</dd>
+<dt><strong>header</strong><span class="classifier">float</span></dt><dd><p>The filter name, as given by the TRILEGAL datafile, for this simulation.</p>
+</dd>
+<dt><strong>density_mag</strong><span class="classifier">float</span></dt><dd><p>The limiting magnitude above which to consider local normalising densities,
+corresponding to the <code class="docutils literal notranslate"><span class="pre">filt</span></code> bandpass.</p>
+</dd>
+<dt><strong>a_photo</strong><span class="classifier">numpy.ndarray</span></dt><dd><p>The photometry of each source for which simulated perturbations should be
+made.</p>
+</dd>
+<dt><strong>localN</strong><span class="classifier">numpy.ndarray</span></dt><dd><p>The local normalising densities for each source.</p>
+</dd>
+<dt><strong>dm_max</strong><span class="classifier">float</span></dt><dd><p>The maximum magnitude down to which to simulate blended objects, limiting
+the smallest possible perturbation considered.</p>
+</dd>
+<dt><strong>d_mag</strong><span class="classifier">float</span></dt><dd><p>The interval at which to bin the magnitudes of a given set of objects,
+for the creation of the appropriate brightness/density combinations to
+simulate.</p>
+</dd>
+<dt><strong>mag_cut</strong><span class="classifier">numpy.ndarray or list of floats</span></dt><dd><p>The magnitude offsets – or relative fluxes – above which to keep track of
+the fraction of objects suffering from a contaminating source.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>count_array</strong><span class="classifier">numpy.ndarray</span></dt><dd><p>The simulated local normalising densities that were used to simulate
+potential perturbation distributions.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../f-modindex.html" title="Fortran Module Index"
+             >fortran modules</a> |</li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="macauff.make_island_groupings.html" title="make_island_groupings"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="macauff.compute_photometric_likelihoods.html" title="compute_photometric_likelihoods"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">macauff</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../macauff.html" ><code class="docutils literal notranslate"><span class="pre">macauff</span></code> Documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">create_single_perturb_auf</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2021, Tom J Wilson.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 3.5.4.
+    </div>
+  </body>
+</html>

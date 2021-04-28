@@ -1,0 +1,152 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Counterpart Pairing Fortran Subroutines &#8212; macauff</title>
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pyramid.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../_static/graphviz.css" />
+    <script id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Miscellaneous Functions Fortran Subroutines" href="misc_func_docs.html" />
+    <link rel="prev" title="Photometric Likelihood Fortran Subroutines" href="phot_like_docs.html" />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Neuton&amp;subset=latin" type="text/css" media="screen" charset="utf-8" />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Nobile:regular,italic,bold,bolditalic&amp;subset=latin" type="text/css" media="screen" charset="utf-8" />
+<!--[if lte IE 6]>
+<link rel="stylesheet" href="../_static/ie6.css" type="text/css" media="screen" charset="utf-8" />
+<![endif]-->
+
+  </head><body>
+
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../f-modindex.html" title="Fortran Module Index"
+             >fortran modules</a> |</li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="misc_func_docs.html" title="Miscellaneous Functions Fortran Subroutines"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="phot_like_docs.html" title="Photometric Likelihood Fortran Subroutines"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">macauff</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Counterpart Pairing Fortran Subroutines</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="f/counterpart_pairing_fortran">
+<span id="counterpart-pairing-fortran-subroutines"></span><h1>Counterpart Pairing Fortran Subroutines<a class="headerlink" href="#f/counterpart_pairing_fortran" title="Permalink to this headline">¶</a></h1>
+<p class="rubric">Description</p>
+<p>This module provides the Fortran code for the final act of cross-matching, in which
+sources are paired within their respective islands, and counterparts are established.</p>
+<p class="rubric">Quick access</p>
+<dl class="field-list simple">
+<dt class="field-odd">Routines</dt>
+<dd class="field-odd"><p><a class="reference internal" href="#f/counterpart_pairing_fortran/contam_match_prob" title="f/counterpart_pairing_fortran/contam_match_prob"><code class="xref f f-func docutils literal notranslate"><span class="pre">contam_match_prob()</span></code></a></p>
+</dd>
+</dl>
+<p class="rubric">Variables</p>
+<ul>
+<li><dl class="f variable">
+<dt id="f/counterpart_pairing_fortran/dp">
+<code class="sig-prename descclassname"><span class="pre">counterpart_pairing_fortran/</span></code><code class="sig-name descname"><span class="pre">dp</span></code><em> <span class="pre">[</span></em><em><span class="pre">integer</span></em><em><span class="pre">,</span></em><em><span class="pre">parameter=</span></em><span class="pre">kind</span><span class="pre">(</span><span class="pre">0</span><span class="pre">.</span><span class="pre">0d0</span><span class="pre">)</span><em><span class="pre">]</span></em><a class="headerlink" href="#f/counterpart_pairing_fortran/dp" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</li>
+<li><dl class="f variable">
+<dt id="f/counterpart_pairing_fortran/pi">
+<code class="sig-prename descclassname"><span class="pre">counterpart_pairing_fortran/</span></code><code class="sig-name descname"><span class="pre">pi</span></code><em> <span class="pre">[</span></em><em><span class="pre">real</span></em><em><span class="pre">,</span></em><em><span class="pre">parameter=</span></em><span class="pre">4</span><span class="pre">.</span><span class="pre">0_dp</span><span class="pre">*</span><span class="pre">atan</span><span class="pre">(</span><span class="pre">1</span><span class="pre">.</span><span class="pre">0_dp</span><span class="pre">)</span><em><span class="pre">]</span></em><a class="headerlink" href="#f/counterpart_pairing_fortran/pi" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</li>
+</ul>
+<p class="rubric">Subroutines and functions</p>
+<dl class="subroutine">
+<dt id="f/counterpart_pairing_fortran/contam_match_prob">
+<em class="property"><span class="pre">subroutine</span>&#160; </em><code class="sig-prename descclassname"><span class="pre">counterpart_pairing_fortran/</span></code><code class="sig-name descname"><span class="pre">contam_match_prob</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="pre">fcc</span></em>, <em class="sig-param"><span class="pre">fcn</span></em>, <em class="sig-param"><span class="pre">fnc</span></em>, <em class="sig-param"><span class="pre">fnn</span></em>, <em class="sig-param"><span class="pre">rho</span></em>, <em class="sig-param"><span class="pre">drho</span></em>, <em class="sig-param"><span class="pre">sep</span></em>, <em class="sig-param"><span class="pre">gcc</span></em>, <em class="sig-param"><span class="pre">gcn</span></em>, <em class="sig-param"><span class="pre">gnc</span></em>, <em class="sig-param"><span class="pre">gnn</span></em><span class="sig-paren">)</span><a class="headerlink" href="#f/counterpart_pairing_fortran/contam_match_prob" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculate the probability density of two sources being two detections of a single sky object
+given the separation between them, including the combinations of hypotheses that the sources
+independently suffer, or do not suffer, from a statistical description of blended source
+perturbation.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>fcc</strong> (*)<em> [</em><em>real</em><em>,</em><em>in</em><em>]</em></p></li>
+<li><p><strong>fcn</strong> (*)<em> [</em><em>real</em><em>,</em><em>in</em><em>]</em></p></li>
+<li><p><strong>fnc</strong> (*)<em> [</em><em>real</em><em>,</em><em>in</em><em>]</em></p></li>
+<li><p><strong>fnn</strong> (*)<em> [</em><em>real</em><em>,</em><em>in</em><em>]</em></p></li>
+<li><p><strong>rho</strong> (*)<em> [</em><em>real</em><em>,</em><em>in</em><em>]</em></p></li>
+<li><p><strong>drho</strong> (*)<em> [</em><em>real</em><em>,</em><em>in</em><em>]</em></p></li>
+<li><p><strong>sep</strong><em> [</em><em>real</em><em>,</em><em>in</em><em>]</em></p></li>
+<li><p><strong>gcc</strong><em> [</em><em>real</em><em>,</em><em>out</em><em>]</em></p></li>
+<li><p><strong>gcn</strong><em> [</em><em>real</em><em>,</em><em>out</em><em>]</em></p></li>
+<li><p><strong>gnc</strong><em> [</em><em>real</em><em>,</em><em>out</em><em>]</em></p></li>
+<li><p><strong>gnn</strong><em> [</em><em>real</em><em>,</em><em>out</em><em>]</em></p></li>
+</ul>
+</dd>
+<dt class="field-even">Call to</dt>
+<dd class="field-even"><p><a class="reference internal" href="shared_library_docs.html#f/_/jy01a_j0" title="f/_/jy01a_j0"><code class="xref f f-func docutils literal notranslate"><span class="pre">jy01a_j0()</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../f-modindex.html" title="Fortran Module Index"
+             >fortran modules</a> |</li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="misc_func_docs.html" title="Miscellaneous Functions Fortran Subroutines"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="phot_like_docs.html" title="Photometric Likelihood Fortran Subroutines"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">macauff</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Counterpart Pairing Fortran Subroutines</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2021, Tom J Wilson.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 3.5.4.
+    </div>
+  </body>
+</html>

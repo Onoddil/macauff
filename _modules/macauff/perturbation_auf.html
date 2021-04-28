@@ -1,0 +1,784 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>macauff.perturbation_auf &#8212; macauff</title>
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pyramid.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css" />
+    <script id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Neuton&amp;subset=latin" type="text/css" media="screen" charset="utf-8" />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Nobile:regular,italic,bold,bolditalic&amp;subset=latin" type="text/css" media="screen" charset="utf-8" />
+<!--[if lte IE 6]>
+<link rel="stylesheet" href="../../_static/ie6.css" type="text/css" media="screen" charset="utf-8" />
+<![endif]-->
+
+  </head><body>
+
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../f-modindex.html" title="Fortran Module Index"
+             >fortran modules</a> |</li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">macauff</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../index.html" accesskey="U">Module code</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">macauff.perturbation_auf</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for macauff.perturbation_auf</h1><div class="highlight"><pre>
+<span></span><span class="c1"># Licensed under a 3-clause BSD style license - see LICENSE</span>
+<span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">This module provides the framework to handle the creation of the perturbation</span>
+<span class="sd">component of the astrometric uncertainty function.</span>
+<span class="sd">&#39;&#39;&#39;</span>
+
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+
+<span class="kn">from</span> <span class="nn">.misc_functions</span> <span class="kn">import</span> <span class="p">(</span><span class="n">_load_single_sky_slice</span><span class="p">,</span> <span class="n">_load_rectangular_slice</span><span class="p">,</span>
+                             <span class="n">_create_rectangular_slice_arrays</span><span class="p">)</span>
+<span class="kn">from</span> <span class="nn">.misc_functions_fortran</span> <span class="kn">import</span> <span class="n">misc_functions_fortran</span> <span class="k">as</span> <span class="n">mff</span>
+<span class="kn">from</span> <span class="nn">.get_trilegal_wrapper</span> <span class="kn">import</span> <span class="n">get_trilegal</span>
+<span class="kn">from</span> <span class="nn">.perturbation_auf_fortran</span> <span class="kn">import</span> <span class="n">perturbation_auf_fortran</span> <span class="k">as</span> <span class="n">paf</span>
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;make_perturb_aufs&#39;</span><span class="p">,</span> <span class="s1">&#39;create_single_perturb_auf&#39;</span><span class="p">]</span>
+
+
+<div class="viewcode-block" id="make_perturb_aufs"><a class="viewcode-back" href="../../api/macauff.make_perturb_aufs.html#macauff.make_perturb_aufs">[docs]</a><span class="k">def</span> <span class="nf">make_perturb_aufs</span><span class="p">(</span><span class="n">auf_folder</span><span class="p">,</span> <span class="n">cat_folder</span><span class="p">,</span> <span class="n">filters</span><span class="p">,</span> <span class="n">auf_points</span><span class="p">,</span> <span class="n">r</span><span class="p">,</span> <span class="n">dr</span><span class="p">,</span> <span class="n">rho</span><span class="p">,</span>
+                      <span class="n">drho</span><span class="p">,</span> <span class="n">which_cat</span><span class="p">,</span> <span class="n">include_perturb_auf</span><span class="p">,</span> <span class="n">mem_chunk_num</span><span class="p">,</span>
+                      <span class="n">tri_download_flag</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">delta_mag_cuts</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">psf_fwhms</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                      <span class="n">tri_set_name</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">tri_filt_num</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">tri_filt_names</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                      <span class="n">auf_region_frame</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">num_trials</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">j0s</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">density_mags</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                      <span class="n">dm_max</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">d_mag</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">compute_local_density</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">density_radius</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Function to perform the creation of the blended object perturbation component</span>
+<span class="sd">    of the AUF.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    auf_folder : string</span>
+<span class="sd">        The overall folder into which to create filter-pointing folders and save</span>
+<span class="sd">        individual simulation files.</span>
+<span class="sd">    cat_folder : string</span>
+<span class="sd">        The folder that the photometric catalogue being simulated for perturbation</span>
+<span class="sd">        AUF component is stored in.</span>
+<span class="sd">    filters : list of strings or numpy.ndarray of strings</span>
+<span class="sd">        An array containing the list of filters in this catalogue to create</span>
+<span class="sd">        simulated AUF components for.</span>
+<span class="sd">    auf_points : numpy.ndarray</span>
+<span class="sd">        Two-dimensional array containing pairs of coordinates at which to evaluate</span>
+<span class="sd">        the perturbation AUF components.</span>
+<span class="sd">    r : numpy.ndarray</span>
+<span class="sd">        The real-space coordinates for the Hankel transformations used in AUF-AUF</span>
+<span class="sd">        convolution.</span>
+<span class="sd">    dr : numpy.ndarray</span>
+<span class="sd">        The spacings between ``r`` elements.</span>
+<span class="sd">    rho : numpy.ndarray</span>
+<span class="sd">        The fourier-space coordinates for Hankel transformations.</span>
+<span class="sd">    drho : numpy.ndarray</span>
+<span class="sd">        The spacings between ``rho`` elements.</span>
+<span class="sd">    which_cat : string</span>
+<span class="sd">        Indicator as to whether these perturbation AUFs are for catalogue &quot;a&quot;</span>
+<span class="sd">        or catalogue &quot;b&quot; within the cross-match process.</span>
+<span class="sd">    include_perturb_auf : boolean</span>
+<span class="sd">        ``True`` or ``False`` flag indicating whether perturbation component of the</span>
+<span class="sd">        AUF should be used or not within the cross-match process.</span>
+<span class="sd">    mem_chunk_num : int</span>
+<span class="sd">        Number of individual sub-sections to break catalogue into for memory</span>
+<span class="sd">        saving purposes.</span>
+<span class="sd">    tri_download_flag : boolean, optional</span>
+<span class="sd">        A ``True``/``False`` flag, whether to re-download TRILEGAL simulated star</span>
+<span class="sd">        counts or not if a simulation already exists in a given folder. Only</span>
+<span class="sd">        needed if ``include_perturb_auf`` is True.</span>
+<span class="sd">    delta_mag_cuts : numpy.ndarray, optional</span>
+<span class="sd">        Array of magnitude offsets corresponding to relative fluxes of perturbing</span>
+<span class="sd">        sources, for consideration of relative contamination chances. Must be given</span>
+<span class="sd">        if ``include_perturb_auf`` is ``True``.</span>
+<span class="sd">    psf_fwhms : numpy.ndarray, optional</span>
+<span class="sd">        Array of full width at half-maximums for each filter in ``filters``. Only</span>
+<span class="sd">        required if ``include_perturb_auf`` is True; defaults to ``None``.</span>
+<span class="sd">    tri_set_name : string, optional</span>
+<span class="sd">        Name of the filter set to generate simulated TRILEGAL Galactic source</span>
+<span class="sd">        counts from. If ``include_perturb_auf`` and ``tri_download_flag`` are</span>
+<span class="sd">        ``True``, this must be set.</span>
+<span class="sd">    tri_filt_num : string, optional</span>
+<span class="sd">        Column number of the filter defining the magnitude limit of simulated</span>
+<span class="sd">        TRILEGAL Galactic sources. If ``include_perturb_auf`` and</span>
+<span class="sd">        ``tri_download_flag`` are ``True``, this must be set.</span>
+<span class="sd">    tri_filt_names : list or array of strings, optional</span>
+<span class="sd">        List of filter names in the TRILEGAL filterset defined in ``tri_set_name``,</span>
+<span class="sd">        in the same order as provided in ``psf_fwhms``. If ``include_perturb_auf``</span>
+<span class="sd">        and ``tri_download_flag`` are ``True``, this must be set.</span>
+<span class="sd">    auf_region_frame : string, optional</span>
+<span class="sd">        Coordinate reference frame in which sky coordinates are defined, either</span>
+<span class="sd">        ``equatorial`` or ``galactic``, used to define the coordinates TRILEGAL</span>
+<span class="sd">        simulations are generated in. If ``include_perturb_auf`` and</span>
+<span class="sd">        ``tri_download_flag`` are ``True``, this must be set.</span>
+<span class="sd">    num_trials : integer, optional</span>
+<span class="sd">        The number of simulated PSFs to compute in the derivation of the</span>
+<span class="sd">        perturbation component of the AUF. Must be given if ``include_perturb_auf``</span>
+<span class="sd">        is ``True``.</span>
+<span class="sd">    j0s : numpy.ndarray, optional</span>
+<span class="sd">        The Bessel Function of First Kind of Zeroth Order evaluated at each</span>
+<span class="sd">        ``r``-``rho`` combination. Must be given if ``include_perturb_auf``</span>
+<span class="sd">        is ``True``.</span>
+<span class="sd">    density_mags : numpy.ndarray, optional</span>
+<span class="sd">        The faintest magnitude down to which to consider number densities of</span>
+<span class="sd">        objects for normalisation purposes, in each filter, in the same order</span>
+<span class="sd">        as ``psf_fwhms``. Must be given if ``include_perturb_auf`` is ``True``.</span>
+<span class="sd">        Must be the same as were used to calculate ``count_density`` in</span>
+<span class="sd">        ``calculate_local_density``, if ``compute_local_density`` is ``False``</span>
+<span class="sd">        and pre-computed densities are being used.</span>
+<span class="sd">    dm_max : float, optional</span>
+<span class="sd">        The maximum magnitude difference, or relative flux, down to which to</span>
+<span class="sd">        consider simulated blended sources. Must be given if</span>
+<span class="sd">        ``include_perturb_auf`` is ``True``.</span>
+<span class="sd">    d_mag : float, optional</span>
+<span class="sd">        The resolution at which to create the TRILEGAL source density distribution.</span>
+<span class="sd">        Must be provided if ``include_perturb_auf`` is ``True``.</span>
+<span class="sd">    compute_local_density : boolean, optional</span>
+<span class="sd">        Flag to indicate whether to calculate local source densities during</span>
+<span class="sd">        the cross-match process, or whether to use pre-calculated values. Must</span>
+<span class="sd">        be provided if ``include_perturb_auf`` is ``True``.</span>
+<span class="sd">    density_radius : float, optional</span>
+<span class="sd">        The astrometric distance, in degrees, within which to consider numbers</span>
+<span class="sd">        of internal catalogue sources, from which to calculate local density.</span>
+<span class="sd">        Must be given if both ``include_perturb_auf`` and</span>
+<span class="sd">        ``compute_local_density`` are both ``True``.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">include_perturb_auf</span> <span class="ow">and</span> <span class="n">tri_download_flag</span> <span class="ow">and</span> <span class="n">tri_set_name</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;tri_set_name must be given if include_perturb_auf and tri_download_flag &quot;</span>
+                         <span class="s2">&quot;are both True.&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">include_perturb_auf</span> <span class="ow">and</span> <span class="n">tri_download_flag</span> <span class="ow">and</span> <span class="n">tri_filt_num</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;tri_filt_num must be given if include_perturb_auf and tri_download_flag &quot;</span>
+                         <span class="s2">&quot;are both True.&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">include_perturb_auf</span> <span class="ow">and</span> <span class="n">tri_download_flag</span> <span class="ow">and</span> <span class="n">auf_region_frame</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;auf_region_frame must be given if include_perturb_auf and &quot;</span>
+                         <span class="s2">&quot;tri_download_flag are both True.&quot;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">include_perturb_auf</span> <span class="ow">and</span> <span class="n">tri_filt_names</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;tri_filt_names must be given if include_perturb_auf is True.&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">include_perturb_auf</span> <span class="ow">and</span> <span class="n">delta_mag_cuts</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;delta_mag_cuts must be given if include_perturb_auf is True.&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">include_perturb_auf</span> <span class="ow">and</span> <span class="n">psf_fwhms</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;psf_fwhms must be given if include_perturb_auf is True.&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">include_perturb_auf</span> <span class="ow">and</span> <span class="n">num_trials</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;num_trials must be given if include_perturb_auf is True.&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">include_perturb_auf</span> <span class="ow">and</span> <span class="n">j0s</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;j0s must be given if include_perturb_auf is True.&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">include_perturb_auf</span> <span class="ow">and</span> <span class="n">density_mags</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;density_mags must be given if include_perturb_auf is True.&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">include_perturb_auf</span> <span class="ow">and</span> <span class="n">dm_max</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;dm_max must be given if include_perturb_auf is True.&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">include_perturb_auf</span> <span class="ow">and</span> <span class="n">d_mag</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;d_mag must be given if include_perturb_auf is True.&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">include_perturb_auf</span> <span class="ow">and</span> <span class="n">compute_local_density</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;compute_local_density must be given if include_perturb_auf is True.&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">include_perturb_auf</span> <span class="ow">and</span> <span class="n">compute_local_density</span> <span class="ow">and</span> <span class="n">density_radius</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;density_radius must be given if include_perturb_auf and &quot;</span>
+                         <span class="s2">&quot;compute_local_density are both True.&quot;</span><span class="p">)</span>
+
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Creating perturbation AUFs sky indices for catalogue &quot;</span><span class="si">{}</span><span class="s1">&quot;...&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">which_cat</span><span class="p">))</span>
+    <span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span>
+
+    <span class="n">n_sources</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{}</span><span class="s1">/con_cat_astro.npy&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">cat_folder</span><span class="p">),</span> <span class="n">mmap_mode</span><span class="o">=</span><span class="s1">&#39;r&#39;</span><span class="p">))</span>
+
+    <span class="n">modelrefinds</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">lib</span><span class="o">.</span><span class="n">format</span><span class="o">.</span><span class="n">open_memmap</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{}</span><span class="s1">/modelrefinds.npy&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">auf_folder</span><span class="p">),</span>
+                                             <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;w+&#39;</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="n">n_sources</span><span class="p">),</span>
+                                             <span class="n">fortran_order</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">cnum</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">mem_chunk_num</span><span class="p">):</span>
+        <span class="n">lowind</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">floor</span><span class="p">(</span><span class="n">n_sources</span><span class="o">*</span><span class="n">cnum</span><span class="o">/</span><span class="n">mem_chunk_num</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+        <span class="n">highind</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">floor</span><span class="p">(</span><span class="n">n_sources</span><span class="o">*</span><span class="p">(</span><span class="n">cnum</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">/</span><span class="n">mem_chunk_num</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+        <span class="n">a</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{}</span><span class="s1">/con_cat_astro.npy&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">cat_folder</span><span class="p">),</span> <span class="n">mmap_mode</span><span class="o">=</span><span class="s1">&#39;r&#39;</span><span class="p">)[</span><span class="n">lowind</span><span class="p">:</span><span class="n">highind</span><span class="p">]</span>
+        <span class="c1"># As we chunk in even steps through the files this is simple for now,</span>
+        <span class="c1"># but could be replaced with a more complex mapping in the future.</span>
+        <span class="n">indexmap</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">lowind</span><span class="p">,</span> <span class="n">highind</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+
+        <span class="c1"># Which sky position to use is more complex; this involves determining</span>
+        <span class="c1"># the smallest great-circle distance to each auf_point AUF mapping for</span>
+        <span class="c1"># each source.</span>
+        <span class="n">modelrefinds</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="n">indexmap</span><span class="p">]</span> <span class="o">=</span> <span class="n">mff</span><span class="o">.</span><span class="n">find_nearest_point</span><span class="p">(</span><span class="n">a</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">a</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">],</span>
+                                                           <span class="n">auf_points</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">auf_points</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">])</span>
+
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Creating empirical perturbation AUFs for catalogue &quot;</span><span class="si">{}</span><span class="s1">&quot;...&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">which_cat</span><span class="p">))</span>
+    <span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span>
+
+    <span class="c1"># Store the length of the density-magnitude combinations in each sky/filter</span>
+    <span class="c1"># combination for future loading purposes.</span>
+    <span class="n">arraylengths</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">lib</span><span class="o">.</span><span class="n">format</span><span class="o">.</span><span class="n">open_memmap</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{}</span><span class="s1">/arraylengths.npy&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">auf_folder</span><span class="p">),</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;w+&#39;</span><span class="p">,</span>
+                                             <span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">filters</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">auf_points</span><span class="p">)),</span>
+                                             <span class="n">fortran_order</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="c1"># Overload compute_local_density if it is False but local_N does not exist.</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">compute_local_density</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{}</span><span class="s1">/local_N.npy&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">auf_folder</span><span class="p">)):</span>
+        <span class="n">compute_local_density</span> <span class="o">=</span> <span class="kc">True</span>
+
+    <span class="k">if</span> <span class="n">include_perturb_auf</span><span class="p">:</span>
+        <span class="n">a_tot_photo</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{}</span><span class="s1">/con_cat_photo.npy&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">cat_folder</span><span class="p">),</span> <span class="n">mmap_mode</span><span class="o">=</span><span class="s1">&#39;r&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">compute_local_density</span><span class="p">:</span>
+            <span class="n">a_tot_astro</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{}</span><span class="s1">/con_cat_astro.npy&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">cat_folder</span><span class="p">),</span> <span class="n">mmap_mode</span><span class="o">=</span><span class="s1">&#39;r&#39;</span><span class="p">)</span>
+            <span class="c1"># Set up the temporary sky slice memmap arrays quickly, as they will</span>
+            <span class="c1"># be needed in calculate_local_density later.</span>
+            <span class="n">_create_rectangular_slice_arrays</span><span class="p">(</span><span class="n">auf_folder</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">a_tot_astro</span><span class="p">))</span>
+            <span class="n">memmap_slice_arrays</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;1&#39;</span><span class="p">,</span> <span class="s1">&#39;2&#39;</span><span class="p">,</span> <span class="s1">&#39;3&#39;</span><span class="p">,</span> <span class="s1">&#39;4&#39;</span><span class="p">,</span> <span class="s1">&#39;combined&#39;</span><span class="p">]:</span>
+                <span class="n">memmap_slice_arrays</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">lib</span><span class="o">.</span><span class="n">format</span><span class="o">.</span><span class="n">open_memmap</span><span class="p">(</span>
+                    <span class="s1">&#39;</span><span class="si">{}</span><span class="s1">/</span><span class="si">{}</span><span class="s1">_temporary_sky_slice_</span><span class="si">{}</span><span class="s1">.npy&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">auf_folder</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">n</span><span class="p">),</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;r+&#39;</span><span class="p">,</span>
+                    <span class="n">dtype</span><span class="o">=</span><span class="nb">bool</span><span class="p">,</span> <span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">a_tot_astro</span><span class="p">),)))</span>
+
+    <span class="k">if</span> <span class="n">compute_local_density</span> <span class="ow">and</span> <span class="n">include_perturb_auf</span><span class="p">:</span>
+        <span class="n">local_N</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">lib</span><span class="o">.</span><span class="n">format</span><span class="o">.</span><span class="n">open_memmap</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{}</span><span class="s1">/local_N.npy&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">auf_folder</span><span class="p">),</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;w+&#39;</span><span class="p">,</span>
+                                            <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">,</span> <span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">a_tot_astro</span><span class="p">),))</span>
+
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">auf_points</span><span class="p">)):</span>
+        <span class="n">ax1</span><span class="p">,</span> <span class="n">ax2</span> <span class="o">=</span> <span class="n">auf_points</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+        <span class="n">ax_folder</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="si">{}</span><span class="s1">/</span><span class="si">{}</span><span class="s1">/</span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">auf_folder</span><span class="p">,</span> <span class="n">ax1</span><span class="p">,</span> <span class="n">ax2</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">ax_folder</span><span class="p">):</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">ax_folder</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">include_perturb_auf</span> <span class="ow">and</span> <span class="p">(</span><span class="n">tri_download_flag</span> <span class="ow">or</span> <span class="ow">not</span>
+                                    <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{}</span><span class="s1">/trilegal_auf_simulation.dat&#39;</span>
+                                                   <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">ax_folder</span><span class="p">))):</span>
+            <span class="n">download_trilegal_simulation</span><span class="p">(</span><span class="n">ax_folder</span><span class="p">,</span> <span class="n">tri_set_name</span><span class="p">,</span> <span class="n">ax1</span><span class="p">,</span> <span class="n">ax2</span><span class="p">,</span> <span class="n">tri_filt_num</span><span class="p">,</span>
+                                         <span class="n">auf_region_frame</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">include_perturb_auf</span><span class="p">:</span>
+            <span class="n">sky_cut</span> <span class="o">=</span> <span class="n">_load_single_sky_slice</span><span class="p">(</span><span class="n">auf_folder</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">modelrefinds</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="p">:])</span>
+            <span class="n">a_photo_cut</span> <span class="o">=</span> <span class="n">a_tot_photo</span><span class="p">[</span><span class="n">sky_cut</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">compute_local_density</span><span class="p">:</span>
+                <span class="n">a_astro_cut</span> <span class="o">=</span> <span class="n">a_tot_astro</span><span class="p">[</span><span class="n">sky_cut</span><span class="p">]</span>
+
+        <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">filters</span><span class="p">)):</span>
+            <span class="n">filt</span> <span class="o">=</span> <span class="n">filters</span><span class="p">[</span><span class="n">j</span><span class="p">]</span>
+
+            <span class="n">filt_folder</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="si">{}</span><span class="s1">/</span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">ax_folder</span><span class="p">,</span> <span class="n">filt</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">filt_folder</span><span class="p">):</span>
+                <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">filt_folder</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">include_perturb_auf</span><span class="p">:</span>
+                <span class="n">good_mag_slice</span> <span class="o">=</span> <span class="o">~</span><span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">a_photo_cut</span><span class="p">[:,</span> <span class="n">j</span><span class="p">])</span>
+                <span class="n">a_photo</span> <span class="o">=</span> <span class="n">a_photo_cut</span><span class="p">[</span><span class="n">good_mag_slice</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">a_photo</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="n">arraylengths</span><span class="p">[</span><span class="n">j</span><span class="p">,</span> <span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+                    <span class="k">continue</span>
+                <span class="k">if</span> <span class="n">compute_local_density</span><span class="p">:</span>
+                    <span class="n">localN</span> <span class="o">=</span> <span class="n">calculate_local_density</span><span class="p">(</span>
+                        <span class="n">a_astro_cut</span><span class="p">[</span><span class="n">good_mag_slice</span><span class="p">],</span> <span class="n">a_tot_astro</span><span class="p">,</span> <span class="n">a_tot_photo</span><span class="p">[:,</span> <span class="n">j</span><span class="p">],</span>
+                        <span class="n">auf_folder</span><span class="p">,</span> <span class="n">cat_folder</span><span class="p">,</span> <span class="n">density_radius</span><span class="p">,</span> <span class="n">density_mags</span><span class="p">[</span><span class="n">j</span><span class="p">],</span>
+                        <span class="n">memmap_slice_arrays</span><span class="p">)</span>
+                    <span class="c1"># Because we always calculate the density from the full</span>
+                    <span class="c1"># catalogue, using just the astrometry, we should be able</span>
+                    <span class="c1"># to just over-write this N times if there happen to be N</span>
+                    <span class="c1"># good detections of a source.</span>
+                    <span class="n">local_N</span><span class="p">[</span><span class="n">sky_cut</span><span class="p">][</span><span class="n">good_mag_slice</span><span class="p">]</span> <span class="o">=</span> <span class="n">localN</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">localN</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{}</span><span class="s1">/local_N.npy&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">auf_folder</span><span class="p">),</span>
+                                     <span class="n">mmap_mode</span><span class="o">=</span><span class="s1">&#39;r&#39;</span><span class="p">)[</span><span class="n">sky_cut</span><span class="p">][</span><span class="n">good_mag_slice</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span>
+                <span class="n">Narray</span> <span class="o">=</span> <span class="n">create_single_perturb_auf</span><span class="p">(</span>
+                    <span class="n">ax_folder</span><span class="p">,</span> <span class="n">filters</span><span class="p">[</span><span class="n">j</span><span class="p">],</span> <span class="n">r</span><span class="p">,</span> <span class="n">dr</span><span class="p">,</span> <span class="n">rho</span><span class="p">,</span> <span class="n">drho</span><span class="p">,</span> <span class="n">j0s</span><span class="p">,</span> <span class="n">num_trials</span><span class="p">,</span> <span class="n">psf_fwhms</span><span class="p">[</span><span class="n">j</span><span class="p">],</span>
+                    <span class="n">tri_filt_names</span><span class="p">[</span><span class="n">j</span><span class="p">],</span> <span class="n">density_mags</span><span class="p">[</span><span class="n">j</span><span class="p">],</span> <span class="n">a_photo</span><span class="p">,</span> <span class="n">localN</span><span class="p">,</span> <span class="n">dm_max</span><span class="p">,</span> <span class="n">d_mag</span><span class="p">,</span>
+                    <span class="n">delta_mag_cuts</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c1"># Without the simulations to force local normalising density N or</span>
+                <span class="c1"># individual source brightness magnitudes, we can simply combine</span>
+                <span class="c1"># all data into a single &quot;bin&quot;.</span>
+                <span class="n">num_N_mag</span> <span class="o">=</span> <span class="mi">1</span>
+                <span class="c1"># In cases where we do not want to use the perturbation AUF component,</span>
+                <span class="c1"># we currently don&#39;t have separate functions, but instead set up dummy</span>
+                <span class="c1"># functions and variables to pass what mathematically amounts to</span>
+                <span class="c1"># &quot;nothing&quot; through the cross-match. Here we would use fortran</span>
+                <span class="c1"># subroutines to create the perturbation simulations, so we make</span>
+                <span class="c1"># f-ordered dummy parameters.</span>
+                <span class="n">Frac</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span> <span class="n">num_N_mag</span><span class="p">),</span> <span class="nb">float</span><span class="p">,</span> <span class="n">order</span><span class="o">=</span><span class="s1">&#39;F&#39;</span><span class="p">)</span>
+                <span class="n">np</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{}</span><span class="s1">/frac.npy&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">filt_folder</span><span class="p">),</span> <span class="n">Frac</span><span class="p">)</span>
+                <span class="n">Flux</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">num_N_mag</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="n">order</span><span class="o">=</span><span class="s1">&#39;F&#39;</span><span class="p">)</span>
+                <span class="n">np</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{}</span><span class="s1">/flux.npy&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">filt_folder</span><span class="p">),</span> <span class="n">Flux</span><span class="p">)</span>
+                <span class="c1"># Remember that r is bins, so the evaluations at bin middle are one</span>
+                <span class="c1"># shorter in length.</span>
+                <span class="n">offset</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">r</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">num_N_mag</span><span class="p">),</span> <span class="nb">float</span><span class="p">,</span> <span class="n">order</span><span class="o">=</span><span class="s1">&#39;F&#39;</span><span class="p">)</span>
+                <span class="c1"># Fix offsets such that the probability density function looks like</span>
+                <span class="c1"># a delta function, such that a two-dimensional circular coordinate</span>
+                <span class="c1"># integral would evaluate to one at every point, cf. ``cumulative``.</span>
+                <span class="n">offset</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="p">:]</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">/</span> <span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="p">(</span><span class="n">r</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">dr</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">/</span><span class="mi">2</span><span class="p">)</span> <span class="o">*</span> <span class="n">dr</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+                <span class="n">np</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{}</span><span class="s1">/offset.npy&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">filt_folder</span><span class="p">),</span> <span class="n">offset</span><span class="p">)</span>
+                <span class="c1"># The cumulative integral of a delta function is always unity.</span>
+                <span class="n">cumulative</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">r</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">num_N_mag</span><span class="p">),</span> <span class="nb">float</span><span class="p">,</span> <span class="n">order</span><span class="o">=</span><span class="s1">&#39;F&#39;</span><span class="p">)</span>
+                <span class="n">np</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{}</span><span class="s1">/cumulative.npy&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">filt_folder</span><span class="p">),</span> <span class="n">cumulative</span><span class="p">)</span>
+                <span class="c1"># The Hankel transform of a delta function is a flat line; this</span>
+                <span class="c1"># then preserves the convolution being multiplication in fourier</span>
+                <span class="c1"># space, as F(x) x 1 = F(x), similar to how f(x) * d(0) = f(x).</span>
+                <span class="n">fourieroffset</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">rho</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">num_N_mag</span><span class="p">),</span> <span class="nb">float</span><span class="p">,</span> <span class="n">order</span><span class="o">=</span><span class="s1">&#39;F&#39;</span><span class="p">)</span>
+                <span class="n">np</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{}</span><span class="s1">/fourier.npy&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">filt_folder</span><span class="p">),</span> <span class="n">fourieroffset</span><span class="p">)</span>
+                <span class="c1"># Both normalising density and magnitude arrays can be proxied</span>
+                <span class="c1"># with a dummy parameter, as any minimisation of N-m distance</span>
+                <span class="c1"># must pick the single value anyway.</span>
+                <span class="n">Narray</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mi">1</span><span class="p">]],</span> <span class="nb">float</span><span class="p">)</span>
+                <span class="n">np</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{}</span><span class="s1">/N.npy&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">filt_folder</span><span class="p">),</span> <span class="n">Narray</span><span class="p">)</span>
+                <span class="n">magarray</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mi">1</span><span class="p">]],</span> <span class="nb">float</span><span class="p">)</span>
+                <span class="n">np</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{}</span><span class="s1">/mag.npy&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">filt_folder</span><span class="p">),</span> <span class="n">magarray</span><span class="p">)</span>
+            <span class="n">arraylengths</span><span class="p">[</span><span class="n">j</span><span class="p">,</span> <span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">Narray</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">include_perturb_auf</span><span class="p">:</span>
+        <span class="n">longestNm</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">amax</span><span class="p">(</span><span class="n">arraylengths</span><span class="p">)</span>
+
+        <span class="n">Narrays</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">lib</span><span class="o">.</span><span class="n">format</span><span class="o">.</span><span class="n">open_memmap</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{}</span><span class="s1">/narrays.npy&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">auf_folder</span><span class="p">),</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;w+&#39;</span><span class="p">,</span>
+                                            <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">,</span> <span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="n">longestNm</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">filters</span><span class="p">),</span>
+                                            <span class="nb">len</span><span class="p">(</span><span class="n">auf_points</span><span class="p">)),</span> <span class="n">fortran_order</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">Narrays</span><span class="p">[:,</span> <span class="p">:,</span> <span class="p">:]</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+        <span class="n">magarrays</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">lib</span><span class="o">.</span><span class="n">format</span><span class="o">.</span><span class="n">open_memmap</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{}</span><span class="s1">/magarrays.npy&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">auf_folder</span><span class="p">),</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;w+&#39;</span><span class="p">,</span>
+                                              <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">,</span> <span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="n">longestNm</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">filters</span><span class="p">),</span>
+                                              <span class="nb">len</span><span class="p">(</span><span class="n">auf_points</span><span class="p">)),</span> <span class="n">fortran_order</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">magarrays</span><span class="p">[:,</span> <span class="p">:,</span> <span class="p">:]</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">auf_points</span><span class="p">)):</span>
+            <span class="n">ax1</span><span class="p">,</span> <span class="n">ax2</span> <span class="o">=</span> <span class="n">auf_points</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+            <span class="n">ax_folder</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="si">{}</span><span class="s1">/</span><span class="si">{}</span><span class="s1">/</span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">auf_folder</span><span class="p">,</span> <span class="n">ax1</span><span class="p">,</span> <span class="n">ax2</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">filters</span><span class="p">)):</span>
+                <span class="k">if</span> <span class="n">arraylengths</span><span class="p">[</span><span class="n">j</span><span class="p">,</span> <span class="n">i</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="k">continue</span>
+                <span class="n">filt</span> <span class="o">=</span> <span class="n">filters</span><span class="p">[</span><span class="n">j</span><span class="p">]</span>
+                <span class="n">filt_folder</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="si">{}</span><span class="s1">/</span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">ax_folder</span><span class="p">,</span> <span class="n">filt</span><span class="p">)</span>
+                <span class="n">Narray</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{}</span><span class="s1">/N.npy&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">filt_folder</span><span class="p">))</span>
+                <span class="n">magarray</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{}</span><span class="s1">/mag.npy&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">filt_folder</span><span class="p">))</span>
+                <span class="n">Narrays</span><span class="p">[:</span><span class="n">arraylengths</span><span class="p">[</span><span class="n">j</span><span class="p">,</span> <span class="n">i</span><span class="p">],</span> <span class="n">j</span><span class="p">,</span> <span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">Narray</span>
+                <span class="n">magarrays</span><span class="p">[:</span><span class="n">arraylengths</span><span class="p">[</span><span class="n">j</span><span class="p">,</span> <span class="n">i</span><span class="p">],</span> <span class="n">j</span><span class="p">,</span> <span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">magarray</span>
+
+    <span class="c1"># Once the individual AUF simulations are saved, we also need to calculate</span>
+    <span class="c1"># the indices each source references when slicing into the 4-D cubes</span>
+    <span class="c1"># created by [1-D array] x N-m combination x filter x sky position iteration.</span>
+
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Creating perturbation AUFs filter indices for catalogue &quot;</span><span class="si">{}</span><span class="s1">&quot;...&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">which_cat</span><span class="p">))</span>
+    <span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span>
+
+    <span class="k">for</span> <span class="n">cnum</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">mem_chunk_num</span><span class="p">):</span>
+        <span class="n">lowind</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">floor</span><span class="p">(</span><span class="n">n_sources</span><span class="o">*</span><span class="n">cnum</span><span class="o">/</span><span class="n">mem_chunk_num</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+        <span class="n">highind</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">floor</span><span class="p">(</span><span class="n">n_sources</span><span class="o">*</span><span class="p">(</span><span class="n">cnum</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">/</span><span class="n">mem_chunk_num</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">include_perturb_auf</span><span class="p">:</span>
+            <span class="n">a</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{}</span><span class="s1">/con_cat_photo.npy&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">cat_folder</span><span class="p">),</span> <span class="n">mmap_mode</span><span class="o">=</span><span class="s1">&#39;r&#39;</span><span class="p">)[</span><span class="n">lowind</span><span class="p">:</span><span class="n">highind</span><span class="p">]</span>
+            <span class="n">local_N</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{}</span><span class="s1">/local_N.npy&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">auf_folder</span><span class="p">),</span> <span class="n">mmap_mode</span><span class="o">=</span><span class="s1">&#39;r&#39;</span><span class="p">)[</span><span class="n">lowind</span><span class="p">:</span><span class="n">highind</span><span class="p">]</span>
+        <span class="n">magref</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{}</span><span class="s1">/magref.npy&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">cat_folder</span><span class="p">),</span> <span class="n">mmap_mode</span><span class="o">=</span><span class="s1">&#39;r&#39;</span><span class="p">)[</span><span class="n">lowind</span><span class="p">:</span><span class="n">highind</span><span class="p">]</span>
+        <span class="c1"># As we chunk in even steps through the files this is simple for now,</span>
+        <span class="c1"># but could be replaced with a more complex mapping in the future.</span>
+        <span class="n">indexmap</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">lowind</span><span class="p">,</span> <span class="n">highind</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">include_perturb_auf</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">a</span><span class="p">)):</span>
+                <span class="n">axind</span> <span class="o">=</span> <span class="n">modelrefinds</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="n">indexmap</span><span class="p">[</span><span class="n">i</span><span class="p">]]</span>
+                <span class="n">filterind</span> <span class="o">=</span> <span class="n">magref</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+                <span class="n">Nmind</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argmin</span><span class="p">((</span><span class="n">local_N</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">-</span> <span class="n">Narrays</span><span class="p">[:</span><span class="n">arraylengths</span><span class="p">[</span><span class="n">filterind</span><span class="p">,</span> <span class="n">axind</span><span class="p">],</span>
+                                                        <span class="n">filterind</span><span class="p">,</span> <span class="n">axind</span><span class="p">])</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span>
+                                  <span class="p">(</span><span class="n">a</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">filterind</span><span class="p">]</span> <span class="o">-</span> <span class="n">magarrays</span><span class="p">[:</span><span class="n">arraylengths</span><span class="p">[</span><span class="n">filterind</span><span class="p">,</span> <span class="n">axind</span><span class="p">],</span>
+                                                               <span class="n">filterind</span><span class="p">,</span> <span class="n">axind</span><span class="p">])</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+                <span class="n">modelrefinds</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="n">indexmap</span><span class="p">[</span><span class="n">i</span><span class="p">]]</span> <span class="o">=</span> <span class="n">Nmind</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># For the case that we do not use the perturbation AUF component,</span>
+            <span class="c1"># our dummy N-m files are all one-length arrays, so we can</span>
+            <span class="c1"># trivially index them, regardless of specifics.</span>
+            <span class="n">modelrefinds</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="n">indexmap</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+
+        <span class="c1"># The mapping of which filter to use is straightforward: simply pick</span>
+        <span class="c1"># the filter index of the &quot;best&quot; filter for each source, from magref.</span>
+        <span class="n">modelrefinds</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="n">indexmap</span><span class="p">]</span> <span class="o">=</span> <span class="n">magref</span>
+
+    <span class="k">if</span> <span class="n">include_perturb_auf</span><span class="p">:</span>
+        <span class="k">del</span> <span class="n">Narrays</span><span class="p">,</span> <span class="n">magarrays</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{}</span><span class="s1">/narrays.npy&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">auf_folder</span><span class="p">))</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{}</span><span class="s1">/magarrays.npy&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">auf_folder</span><span class="p">))</span></div>
+
+
+<span class="k">def</span> <span class="nf">download_trilegal_simulation</span><span class="p">(</span><span class="n">tri_folder</span><span class="p">,</span> <span class="n">tri_filter_set</span><span class="p">,</span> <span class="n">ax1</span><span class="p">,</span> <span class="n">ax2</span><span class="p">,</span> <span class="n">mag_num</span><span class="p">,</span> <span class="n">region_frame</span><span class="p">,</span>
+                                 <span class="n">total_objs</span><span class="o">=</span><span class="mf">1.5e6</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Get a single Galactic sightline TRILEGAL simulation of an appropriate sky</span>
+<span class="sd">    size, and save it in a folder for use in the perturbation AUF simulations.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    tri_folder : string</span>
+<span class="sd">        The location of the folder into which to save the TRILEGAL file.</span>
+<span class="sd">    tri_filter_set : string</span>
+<span class="sd">        The name of the filterset, as given by the TRILEGAL input form.</span>
+<span class="sd">    ax1 : float</span>
+<span class="sd">        The first axis position of the sightline to be simulated, in the frame</span>
+<span class="sd">        determined by ``region_frame``.</span>
+<span class="sd">    ax2 : float</span>
+<span class="sd">        The second axis position of the TRILEGAL sightline.</span>
+<span class="sd">    mag_num : integer</span>
+<span class="sd">        The zero-indexed filter number in the ``tri_filter_set`` list of filters</span>
+<span class="sd">        which decides the limiting magnitude down to which tosimulate the</span>
+<span class="sd">        Galactic sources.</span>
+<span class="sd">    region_frame : string</span>
+<span class="sd">        Frame, either equatorial or galactic, of the cross-match being performed,</span>
+<span class="sd">        indicating whether ``ax1`` and ``ax2`` are in Right Ascension and</span>
+<span class="sd">        Declination or Galactic Longitude and Latitude.</span>
+<span class="sd">    total_objs : integer, optional</span>
+<span class="sd">        The approximate number of objects to simulate in a TRILEGAL sightline,</span>
+<span class="sd">        affecting how large an area to request a simulated Galactic region of.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">areaflag</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">triarea</span> <span class="o">=</span> <span class="mf">0.001</span>
+    <span class="n">tri_name</span> <span class="o">=</span> <span class="s1">&#39;trilegal_auf_simulation&#39;</span>
+    <span class="n">mag_lim</span> <span class="o">=</span> <span class="mi">32</span>
+    <span class="n">galactic_flag</span> <span class="o">=</span> <span class="kc">True</span> <span class="k">if</span> <span class="n">region_frame</span> <span class="o">==</span> <span class="s1">&#39;galactic&#39;</span> <span class="k">else</span> <span class="kc">False</span>
+    <span class="k">while</span> <span class="n">areaflag</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">get_trilegal</span><span class="p">(</span><span class="n">tri_name</span><span class="p">,</span> <span class="n">ax1</span><span class="p">,</span> <span class="n">ax2</span><span class="p">,</span> <span class="n">folder</span><span class="o">=</span><span class="n">tri_folder</span><span class="p">,</span> <span class="n">galactic</span><span class="o">=</span><span class="n">galactic_flag</span><span class="p">,</span>
+                     <span class="n">filterset</span><span class="o">=</span><span class="n">tri_filter_set</span><span class="p">,</span> <span class="n">area</span><span class="o">=</span><span class="n">triarea</span><span class="p">,</span> <span class="n">maglim</span><span class="o">=</span><span class="n">mag_lim</span><span class="p">,</span> <span class="n">magnum</span><span class="o">=</span><span class="n">mag_num</span><span class="p">)</span>
+        <span class="n">f</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{}</span><span class="s1">/</span><span class="si">{}</span><span class="s1">.dat&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">tri_folder</span><span class="p">,</span> <span class="n">tri_name</span><span class="p">),</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span>
+        <span class="n">contents</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">readlines</span><span class="p">()</span>
+        <span class="n">f</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="c1"># Two comment lines; one at the top and one at the bottom - we add a</span>
+        <span class="c1"># third in a moment, however</span>
+        <span class="n">nobjs</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">contents</span><span class="p">)</span> <span class="o">-</span> <span class="mi">2</span>
+        <span class="c1"># If too few stars then increase by factor 10 and loop, or scale to give</span>
+        <span class="c1"># about 1.5 million stars and come out of area increase loop --</span>
+        <span class="c1"># simulations can&#39;t be more than 10 sq deg, so accept if that&#39;s as large</span>
+        <span class="c1"># as we can go.</span>
+        <span class="k">if</span> <span class="n">nobjs</span> <span class="o">&lt;</span> <span class="mi">10000</span> <span class="ow">and</span> <span class="n">triarea</span> <span class="o">&lt;</span> <span class="mi">10</span><span class="p">:</span>
+            <span class="n">triarea</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="n">triarea</span><span class="o">*</span><span class="mi">10</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">triarea</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="n">triarea</span> <span class="o">/</span> <span class="n">nobjs</span> <span class="o">*</span> <span class="n">total_objs</span><span class="p">)</span>
+            <span class="n">areaflag</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">system</span><span class="p">(</span><span class="s1">&#39;rm </span><span class="si">{}</span><span class="s1">/</span><span class="si">{}</span><span class="s1">.dat&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">tri_folder</span><span class="p">,</span> <span class="n">tri_name</span><span class="p">))</span>
+    <span class="n">get_trilegal</span><span class="p">(</span><span class="n">tri_name</span><span class="p">,</span> <span class="n">ax1</span><span class="p">,</span> <span class="n">ax2</span><span class="p">,</span> <span class="n">folder</span><span class="o">=</span><span class="n">tri_folder</span><span class="p">,</span> <span class="n">galactic</span><span class="o">=</span><span class="n">galactic_flag</span><span class="p">,</span>
+                 <span class="n">filterset</span><span class="o">=</span><span class="n">tri_filter_set</span><span class="p">,</span> <span class="n">area</span><span class="o">=</span><span class="n">triarea</span><span class="p">,</span> <span class="n">maglim</span><span class="o">=</span><span class="n">mag_lim</span><span class="p">,</span> <span class="n">magnum</span><span class="o">=</span><span class="n">mag_num</span><span class="p">)</span>
+    <span class="n">f</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{}</span><span class="s1">/</span><span class="si">{}</span><span class="s1">.dat&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">tri_folder</span><span class="p">,</span> <span class="n">tri_name</span><span class="p">),</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span>
+    <span class="n">contents</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">readlines</span><span class="p">()</span>
+    <span class="n">f</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+    <span class="n">contents</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="s1">&#39;#area = </span><span class="si">{}</span><span class="s1"> sq deg</span><span class="se">\n</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">triarea</span><span class="p">))</span>
+    <span class="n">f</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{}</span><span class="s1">/</span><span class="si">{}</span><span class="s1">.dat&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">tri_folder</span><span class="p">,</span> <span class="n">tri_name</span><span class="p">),</span> <span class="s2">&quot;w&quot;</span><span class="p">)</span>
+    <span class="n">contents</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">contents</span><span class="p">)</span>
+    <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">contents</span><span class="p">)</span>
+    <span class="n">f</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+
+<span class="k">def</span> <span class="nf">calculate_local_density</span><span class="p">(</span><span class="n">a_astro</span><span class="p">,</span> <span class="n">a_tot_astro</span><span class="p">,</span> <span class="n">a_tot_photo</span><span class="p">,</span> <span class="n">auf_folder</span><span class="p">,</span> <span class="n">cat_folder</span><span class="p">,</span>
+                            <span class="n">density_radius</span><span class="p">,</span> <span class="n">density_mag</span><span class="p">,</span> <span class="n">memmap_slice_arrays</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Calculates the number of sources above a given brightness within a specified</span>
+<span class="sd">    radius of each source in a catalogue, to provide a local density for</span>
+<span class="sd">    normalisation purposes.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    a_astro : numpy.ndarray</span>
+<span class="sd">        Sub-set of astrometric portion of total catalogue, for which local</span>
+<span class="sd">        densities are to be calculated.</span>
+<span class="sd">    a_tot_astro : numpy.ndarray</span>
+<span class="sd">        Full astrometric catalogue, from which all potential sources above</span>
+<span class="sd">        ``density_mag`` and coeval with ``a_astro`` sources are to be extracted.</span>
+<span class="sd">    a_tot_photo : numpy.ndarray</span>
+<span class="sd">        The photometry of the full catalogue, matching ``a_tot_astro``.</span>
+<span class="sd">    auf_folder : string</span>
+<span class="sd">        The folder designated to contain the perturbation AUF component related</span>
+<span class="sd">        data for this catalogue.</span>
+<span class="sd">    cat_folder : string</span>
+<span class="sd">        The location of the catalogue files for this dataset.</span>
+<span class="sd">    density_radius : float</span>
+<span class="sd">        The radius, in degrees, out to which to consider the number of sources</span>
+<span class="sd">        for the normalising density.</span>
+<span class="sd">    density_mag : float</span>
+<span class="sd">        The brightness, in magnitudes, above which to count sources for density</span>
+<span class="sd">        purposes.</span>
+<span class="sd">    memmap_slice_arrays : list of numpy.ndarray</span>
+<span class="sd">        List of the memmap sky slice arrays, to be used in the loading of the</span>
+<span class="sd">        rectangular sky patch.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    count_density : numpy.ndarray</span>
+<span class="sd">        The number of sources per square degree near to each source in</span>
+<span class="sd">        ``a_astro`` that are above ``density_mag`` in ``a_tot_astro``.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">min_lon</span><span class="p">,</span> <span class="n">max_lon</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">amin</span><span class="p">(</span><span class="n">a_astro</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]),</span> <span class="n">np</span><span class="o">.</span><span class="n">amax</span><span class="p">(</span><span class="n">a_astro</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">])</span>
+    <span class="n">min_lat</span><span class="p">,</span> <span class="n">max_lat</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">amin</span><span class="p">(</span><span class="n">a_astro</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]),</span> <span class="n">np</span><span class="o">.</span><span class="n">amax</span><span class="p">(</span><span class="n">a_astro</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">])</span>
+
+    <span class="n">overlap_sky_cut</span> <span class="o">=</span> <span class="n">_load_rectangular_slice</span><span class="p">(</span><span class="n">auf_folder</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">a_tot_astro</span><span class="p">,</span> <span class="n">min_lon</span><span class="p">,</span>
+                                              <span class="n">max_lon</span><span class="p">,</span> <span class="n">min_lat</span><span class="p">,</span> <span class="n">max_lat</span><span class="p">,</span> <span class="n">density_radius</span><span class="p">,</span>
+                                              <span class="n">memmap_slice_arrays</span><span class="p">)</span>
+    <span class="n">cut</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">lib</span><span class="o">.</span><span class="n">format</span><span class="o">.</span><span class="n">open_memmap</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{}</span><span class="s1">/_temporary_slice.npy&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+        <span class="n">auf_folder</span><span class="p">),</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;w+&#39;</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">bool</span><span class="p">,</span> <span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">a_tot_astro</span><span class="p">),))</span>
+    <span class="n">di</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">cut</span><span class="p">)</span> <span class="o">//</span> <span class="mi">20</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">a_tot_astro</span><span class="p">),</span> <span class="n">di</span><span class="p">):</span>
+        <span class="n">cut</span><span class="p">[</span><span class="n">i</span><span class="p">:</span><span class="n">i</span><span class="o">+</span><span class="n">di</span><span class="p">]</span> <span class="o">=</span> <span class="n">overlap_sky_cut</span><span class="p">[</span><span class="n">i</span><span class="p">:</span><span class="n">i</span><span class="o">+</span><span class="n">di</span><span class="p">]</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">a_tot_photo</span><span class="p">[</span><span class="n">i</span><span class="p">:</span><span class="n">i</span><span class="o">+</span><span class="n">di</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">density_mag</span><span class="p">)</span>
+    <span class="n">a_astro_overlap_cut</span> <span class="o">=</span> <span class="n">a_tot_astro</span><span class="p">[</span><span class="n">cut</span><span class="p">]</span>
+    <span class="n">os</span><span class="o">.</span><span class="n">system</span><span class="p">(</span><span class="s1">&#39;rm </span><span class="si">{}</span><span class="s1">/_temporary_slice.npy&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">auf_folder</span><span class="p">))</span>
+
+    <span class="n">counts</span> <span class="o">=</span> <span class="n">paf</span><span class="o">.</span><span class="n">get_density</span><span class="p">(</span><span class="n">a_astro</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">a_astro</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">a_astro_overlap_cut</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">],</span>
+                             <span class="n">a_astro_overlap_cut</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">density_radius</span><span class="p">)</span>
+    <span class="n">min_lon</span><span class="p">,</span> <span class="n">max_lon</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">amin</span><span class="p">(</span><span class="n">a_astro_overlap_cut</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]),</span> <span class="n">np</span><span class="o">.</span><span class="n">amax</span><span class="p">(</span><span class="n">a_astro_overlap_cut</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">])</span>
+    <span class="n">min_lat</span><span class="p">,</span> <span class="n">max_lat</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">amin</span><span class="p">(</span><span class="n">a_astro_overlap_cut</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]),</span> <span class="n">np</span><span class="o">.</span><span class="n">amax</span><span class="p">(</span><span class="n">a_astro_overlap_cut</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">])</span>
+    <span class="n">circle_overlap_area</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">a_astro</span><span class="p">),</span> <span class="nb">float</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">a_astro</span><span class="p">)):</span>
+        <span class="n">circle_overlap_area</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">get_circle_overlap_area</span><span class="p">(</span>
+            <span class="n">density_radius</span><span class="p">,</span> <span class="p">[</span><span class="n">min_lon</span><span class="p">,</span> <span class="n">max_lon</span><span class="p">],</span> <span class="p">[</span><span class="n">min_lat</span><span class="p">,</span> <span class="n">max_lat</span><span class="p">],</span> <span class="n">a_astro</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">]])</span>
+    <span class="n">count_density</span> <span class="o">=</span> <span class="n">counts</span> <span class="o">/</span> <span class="n">circle_overlap_area</span>
+
+    <span class="k">return</span> <span class="n">count_density</span>
+
+
+<span class="k">def</span> <span class="nf">get_circle_overlap_area</span><span class="p">(</span><span class="n">r</span><span class="p">,</span> <span class="n">x_edges</span><span class="p">,</span> <span class="n">y_edges</span><span class="p">,</span> <span class="n">coords</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Calculates the overlap between a circle of given radius and rectangle</span>
+<span class="sd">    defined by four edge coordinates.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    r : float</span>
+<span class="sd">        The radius of the circle.</span>
+<span class="sd">    x_edges : list or numpy.ndarray</span>
+<span class="sd">        Upper and lower limits of the rectangle.</span>
+<span class="sd">    y_edges : list or numpy.ndarray</span>
+<span class="sd">        Limits of the rectangle in the second orthogonal axis.</span>
+<span class="sd">    coords : numpy.ndarray or list</span>
+<span class="sd">        The (x, y) coordinates of the center of each circle to consider</span>
+<span class="sd">        overlap area with rectangle for.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    area : float</span>
+<span class="sd">        The area of circle of radius ``r`` which overlaps the rectangle</span>
+<span class="sd">        defined by ``x_edges`` and ``y_edges``.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">area</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="n">r</span><span class="o">**</span><span class="mi">2</span>
+    <span class="n">has_overlapped_edge</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span>
+    <span class="n">edges</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">x_edges</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">y_edges</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">x_edges</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">y_edges</span><span class="p">[</span><span class="mi">1</span><span class="p">]])</span>
+    <span class="n">coords</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">coords</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">coords</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">coords</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">coords</span><span class="p">[</span><span class="mi">1</span><span class="p">]])</span>
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="p">(</span><span class="n">edge</span><span class="p">,</span> <span class="n">coord</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">edges</span><span class="p">,</span> <span class="n">coords</span><span class="p">)):</span>
+        <span class="n">h</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">coord</span> <span class="o">-</span> <span class="n">edge</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">h</span> <span class="o">&lt;</span> <span class="n">r</span><span class="p">:</span>
+            <span class="c1"># The first chord integration is &quot;free&quot;, and does not have</span>
+            <span class="c1"># truncated limits based on overlaps; the final chord integration,</span>
+            <span class="c1"># however, cares about truncation on both sides. The &quot;middle two&quot;</span>
+            <span class="c1"># integrations only truncate to the previous side.</span>
+            <span class="n">a</span> <span class="o">=</span> <span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">r</span><span class="o">**</span><span class="mi">2</span> <span class="o">-</span> <span class="n">h</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+            <span class="n">b</span> <span class="o">=</span> <span class="o">+</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">r</span><span class="o">**</span><span class="mi">2</span> <span class="o">-</span> <span class="n">h</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">i</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">and</span> <span class="n">has_overlapped_edge</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
+                <span class="n">a</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">x_edges</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="n">coords</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+            <span class="k">if</span> <span class="n">i</span> <span class="o">==</span> <span class="mi">2</span> <span class="ow">and</span> <span class="n">has_overlapped_edge</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span>
+                <span class="n">a</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">y_edges</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="n">coords</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+            <span class="k">if</span> <span class="n">i</span> <span class="o">==</span> <span class="mi">3</span> <span class="ow">and</span> <span class="n">has_overlapped_edge</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
+                <span class="n">a</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">x_edges</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="n">coords</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+            <span class="k">if</span> <span class="n">i</span> <span class="o">==</span> <span class="mi">3</span> <span class="ow">and</span> <span class="n">has_overlapped_edge</span><span class="p">[</span><span class="mi">2</span><span class="p">]:</span>
+                <span class="n">b</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">x_edges</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">coords</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+
+            <span class="n">chord_area_overlap</span> <span class="o">=</span> <span class="n">chord_integral_eval</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">r</span><span class="p">,</span> <span class="n">h</span><span class="p">)</span> <span class="o">-</span> <span class="n">chord_integral_eval</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">r</span><span class="p">,</span> <span class="n">h</span><span class="p">)</span>
+            <span class="n">has_overlapped_edge</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+
+            <span class="n">area</span> <span class="o">-=</span> <span class="n">chord_area_overlap</span>
+
+    <span class="k">return</span> <span class="n">area</span>
+
+
+<span class="k">def</span> <span class="nf">chord_integral_eval</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">r</span><span class="p">,</span> <span class="n">h</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Calculates the indefinite integral of the distance between a given circle</span>
+<span class="sd">    chord and the circumference of the circle, to calculate the chord area.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    x : float</span>
+<span class="sd">        The integrable coordinate, orthogonal to the line between the center</span>
+<span class="sd">        of the circle and the chord at height ``h``.</span>
+<span class="sd">    r : float</span>
+<span class="sd">        The radius of the circle.</span>
+<span class="sd">    h : float</span>
+<span class="sd">        The height of the chord inside the circle of radius ``r``.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    integral : float</span>
+<span class="sd">        The result of the indefinite integral of the chord area.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">d</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">r</span><span class="o">**</span><span class="mi">2</span> <span class="o">-</span> <span class="n">x</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">d</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">x_div_d</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sign</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">inf</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">x_div_d</span> <span class="o">=</span> <span class="n">x</span> <span class="o">/</span> <span class="n">d</span>
+
+    <span class="n">integral</span> <span class="o">=</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="p">(</span><span class="n">x</span> <span class="o">*</span> <span class="n">d</span> <span class="o">+</span> <span class="n">r</span><span class="o">**</span><span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">arctan</span><span class="p">(</span><span class="n">x_div_d</span><span class="p">))</span> <span class="o">-</span> <span class="n">h</span> <span class="o">*</span> <span class="n">x</span>
+    <span class="k">return</span> <span class="n">integral</span>
+
+
+<div class="viewcode-block" id="create_single_perturb_auf"><a class="viewcode-back" href="../../api/macauff.create_single_perturb_auf.html#macauff.create_single_perturb_auf">[docs]</a><span class="k">def</span> <span class="nf">create_single_perturb_auf</span><span class="p">(</span><span class="n">tri_folder</span><span class="p">,</span> <span class="n">filt</span><span class="p">,</span> <span class="n">r</span><span class="p">,</span> <span class="n">dr</span><span class="p">,</span> <span class="n">rho</span><span class="p">,</span> <span class="n">drho</span><span class="p">,</span> <span class="n">j0s</span><span class="p">,</span> <span class="n">num_trials</span><span class="p">,</span> <span class="n">psf_fwhm</span><span class="p">,</span>
+                              <span class="n">header</span><span class="p">,</span> <span class="n">density_mag</span><span class="p">,</span> <span class="n">a_photo</span><span class="p">,</span> <span class="n">localN</span><span class="p">,</span> <span class="n">dm_max</span><span class="p">,</span> <span class="n">d_mag</span><span class="p">,</span> <span class="n">mag_cut</span><span class="p">):</span>
+    <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Creates the associated parameters for describing a single perturbation AUF</span>
+<span class="sd">    component, for a single sky position.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    tri_folder : string</span>
+<span class="sd">        Folder where the TRILEGAL datafile is stored, and where the individual</span>
+<span class="sd">        filter-specific perturbation AUF simulations should be saved.</span>
+<span class="sd">    filt : float</span>
+<span class="sd">        Filter for which to simulate the AUF component.</span>
+<span class="sd">    r : numpy.ndarray</span>
+<span class="sd">        Array of real-space positions.</span>
+<span class="sd">    dr : numpy.ndarray</span>
+<span class="sd">        Array of the bin sizes of each ``r`` position.</span>
+<span class="sd">    rho : numpy.ndarray</span>
+<span class="sd">        Fourier-space coordinates at which to sample the fourier transformation</span>
+<span class="sd">        of the distribution of perturbations due to blended sources.</span>
+<span class="sd">    drho : numpy.ndarray</span>
+<span class="sd">        Bin widths of each ``rho`` coordinate.</span>
+<span class="sd">    j0s : numpy.ndarray</span>
+<span class="sd">        The Bessel Function of First Kind of Zeroth Order, evaluated at all</span>
+<span class="sd">        ``r``-``rho`` combinations.</span>
+<span class="sd">    num_trials : integer</span>
+<span class="sd">        The number of realisations of blended contaminant sources to draw</span>
+<span class="sd">        when simulating perturbations of source positions.</span>
+<span class="sd">    psf_fwhm : float</span>
+<span class="sd">        The full-width at half maxima of the ``filt`` filter.</span>
+<span class="sd">    header : float</span>
+<span class="sd">        The filter name, as given by the TRILEGAL datafile, for this simulation.</span>
+<span class="sd">    density_mag : float</span>
+<span class="sd">        The limiting magnitude above which to consider local normalising densities,</span>
+<span class="sd">        corresponding to the ``filt`` bandpass.</span>
+<span class="sd">    a_photo : numpy.ndarray</span>
+<span class="sd">        The photometry of each source for which simulated perturbations should be</span>
+<span class="sd">        made.</span>
+<span class="sd">    localN : numpy.ndarray</span>
+<span class="sd">        The local normalising densities for each source.</span>
+<span class="sd">    dm_max : float</span>
+<span class="sd">        The maximum magnitude down to which to simulate blended objects, limiting</span>
+<span class="sd">        the smallest possible perturbation considered.</span>
+<span class="sd">    d_mag : float</span>
+<span class="sd">        The interval at which to bin the magnitudes of a given set of objects,</span>
+<span class="sd">        for the creation of the appropriate brightness/density combinations to</span>
+<span class="sd">        simulate.</span>
+<span class="sd">    mag_cut : numpy.ndarray or list of floats</span>
+<span class="sd">        The magnitude offsets -- or relative fluxes -- above which to keep track of</span>
+<span class="sd">        the fraction of objects suffering from a contaminating source.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    count_array : numpy.ndarray</span>
+<span class="sd">        The simulated local normalising densities that were used to simulate</span>
+<span class="sd">        potential perturbation distributions.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">tri_name</span> <span class="o">=</span> <span class="s1">&#39;trilegal_auf_simulation&#39;</span>
+    <span class="n">f</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{}</span><span class="s1">/</span><span class="si">{}</span><span class="s1">.dat&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">tri_folder</span><span class="p">,</span> <span class="n">tri_name</span><span class="p">),</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span>
+    <span class="n">line</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">readline</span><span class="p">()</span>
+    <span class="n">f</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+    <span class="n">bits</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39; &#39;</span><span class="p">)</span>
+    <span class="n">tri_area</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">bits</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span>
+    <span class="n">tri</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">genfromtxt</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{}</span><span class="s1">/</span><span class="si">{}</span><span class="s1">.dat&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">tri_folder</span><span class="p">,</span> <span class="n">tri_name</span><span class="p">),</span> <span class="n">delimiter</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                        <span class="n">names</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">comments</span><span class="o">=</span><span class="s1">&#39;#&#39;</span><span class="p">,</span> <span class="n">skip_header</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+    <span class="c1"># TODO: extend to allow a Galactic source model that doesn&#39;t depend on TRILEGAL</span>
+    <span class="n">tri_mags</span> <span class="o">=</span> <span class="n">tri</span><span class="p">[:][</span><span class="n">header</span><span class="p">]</span>
+    <span class="n">tri_count</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">tri_mags</span> <span class="o">&lt;=</span> <span class="n">density_mag</span><span class="p">)</span> <span class="o">/</span> <span class="n">tri_area</span>
+
+    <span class="n">minmag</span> <span class="o">=</span> <span class="n">d_mag</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">floor</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">amin</span><span class="p">(</span><span class="n">tri_mags</span><span class="p">)</span><span class="o">/</span><span class="n">d_mag</span><span class="p">)</span>
+    <span class="n">maxmag</span> <span class="o">=</span> <span class="n">d_mag</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">amax</span><span class="p">(</span><span class="n">tri_mags</span><span class="p">)</span><span class="o">/</span><span class="n">d_mag</span><span class="p">)</span>
+    <span class="n">hist</span><span class="p">,</span> <span class="n">model_mags</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">histogram</span><span class="p">(</span><span class="n">tri_mags</span><span class="p">,</span> <span class="n">bins</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">minmag</span><span class="p">,</span> <span class="n">maxmag</span><span class="o">+</span><span class="mf">1e-10</span><span class="p">,</span> <span class="n">d_mag</span><span class="p">))</span>
+    <span class="n">hc</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">hist</span> <span class="o">&gt;</span> <span class="mi">3</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+
+    <span class="n">hist</span> <span class="o">=</span> <span class="n">hist</span><span class="p">[</span><span class="n">hc</span><span class="p">]</span>
+    <span class="n">model_mags_interval</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">model_mags</span><span class="p">)[</span><span class="n">hc</span><span class="p">]</span>
+    <span class="n">model_mags</span> <span class="o">=</span> <span class="n">model_mags</span><span class="p">[</span><span class="n">hc</span><span class="p">]</span>
+
+    <span class="n">hist</span> <span class="o">=</span> <span class="n">hist</span> <span class="o">/</span> <span class="n">model_mags_interval</span> <span class="o">/</span> <span class="n">tri_area</span>
+    <span class="n">log10y_tri</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">hist</span><span class="p">)</span>
+
+    <span class="c1"># TODO: add the step to get density and counts of extra-galactic sources.</span>
+    <span class="n">gal_count</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">log10y_gal</span> <span class="o">=</span> <span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">inf</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">ones_like</span><span class="p">(</span><span class="n">log10y_tri</span><span class="p">)</span>
+
+    <span class="n">model_count</span> <span class="o">=</span> <span class="n">tri_count</span> <span class="o">+</span> <span class="n">gal_count</span>
+
+    <span class="n">log10y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="mi">10</span><span class="o">**</span><span class="n">log10y_tri</span> <span class="o">+</span> <span class="mi">10</span><span class="o">**</span><span class="n">log10y_gal</span><span class="p">)</span>
+
+    <span class="c1"># Set a magnitude bin width of 0.25 mags, to avoid oversampling.</span>
+    <span class="n">dmag</span> <span class="o">=</span> <span class="mf">0.25</span>
+    <span class="n">mag_min</span> <span class="o">=</span> <span class="n">dmag</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">floor</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">amin</span><span class="p">(</span><span class="n">a_photo</span><span class="p">)</span><span class="o">/</span><span class="n">dmag</span><span class="p">)</span>
+    <span class="n">mag_max</span> <span class="o">=</span> <span class="n">dmag</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">amax</span><span class="p">(</span><span class="n">a_photo</span><span class="p">)</span><span class="o">/</span><span class="n">dmag</span><span class="p">)</span>
+    <span class="n">magbins</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">mag_min</span><span class="p">,</span> <span class="n">mag_max</span><span class="o">+</span><span class="mf">1e-10</span><span class="p">,</span> <span class="n">dmag</span><span class="p">)</span>
+    <span class="c1"># For local densities, we want a percentage offset, given that we&#39;re in</span>
+    <span class="c1"># logarithmic bins, accepting a log-difference maximum. This is slightly</span>
+    <span class="c1"># lop-sided, but for 20% results in +18%/-22% limits, which is fine.</span>
+    <span class="n">dlogN</span> <span class="o">=</span> <span class="mf">0.2</span>
+    <span class="n">logNvals</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">localN</span><span class="p">)</span>
+    <span class="n">logN_min</span> <span class="o">=</span> <span class="n">dlogN</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">floor</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">amin</span><span class="p">(</span><span class="n">logNvals</span><span class="p">)</span><span class="o">/</span><span class="n">dlogN</span><span class="p">)</span>
+    <span class="n">logN_max</span> <span class="o">=</span> <span class="n">dlogN</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">amax</span><span class="p">(</span><span class="n">logNvals</span><span class="p">)</span><span class="o">/</span><span class="n">dlogN</span><span class="p">)</span>
+    <span class="n">logNbins</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">logN_min</span><span class="p">,</span> <span class="n">logN_max</span><span class="o">+</span><span class="mf">1e-10</span><span class="p">,</span> <span class="n">dlogN</span><span class="p">)</span>
+
+    <span class="n">counts</span><span class="p">,</span> <span class="n">logNbins</span><span class="p">,</span> <span class="n">magbins</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">histogram2d</span><span class="p">(</span><span class="n">logNvals</span><span class="p">,</span> <span class="n">a_photo</span><span class="p">,</span> <span class="n">bins</span><span class="o">=</span><span class="p">[</span><span class="n">logNbins</span><span class="p">,</span> <span class="n">magbins</span><span class="p">])</span>
+    <span class="n">Ni</span><span class="p">,</span> <span class="n">magi</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">counts</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span>
+    <span class="n">mag_array</span> <span class="o">=</span> <span class="mf">0.5</span><span class="o">*</span><span class="p">(</span><span class="n">magbins</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span><span class="o">+</span><span class="n">magbins</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">])[</span><span class="n">magi</span><span class="p">]</span>
+    <span class="n">count_array</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="mf">0.5</span><span class="o">*</span><span class="p">(</span><span class="n">logNbins</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span><span class="o">+</span><span class="n">logNbins</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">])[</span><span class="n">Ni</span><span class="p">])</span>
+
+    <span class="n">R</span> <span class="o">=</span> <span class="mf">1.185</span> <span class="o">*</span> <span class="n">psf_fwhm</span>
+    <span class="n">seed</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">default_rng</span><span class="p">()</span><span class="o">.</span><span class="n">choice</span><span class="p">(</span><span class="mi">100000</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="n">paf</span><span class="o">.</span><span class="n">get_random_seed_size</span><span class="p">())</span>
+    <span class="n">Frac</span><span class="p">,</span> <span class="n">Flux</span><span class="p">,</span> <span class="n">fourieroffset</span><span class="p">,</span> <span class="n">offset</span><span class="p">,</span> <span class="n">cumulative</span> <span class="o">=</span> <span class="n">paf</span><span class="o">.</span><span class="n">perturb_aufs</span><span class="p">(</span>
+        <span class="n">count_array</span><span class="p">,</span> <span class="n">mag_array</span><span class="p">,</span> <span class="n">r</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="n">dr</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span> <span class="n">dr</span><span class="p">,</span> <span class="n">r</span><span class="p">,</span> <span class="n">j0s</span><span class="o">.</span><span class="n">T</span><span class="p">,</span>
+        <span class="n">model_mags</span><span class="o">+</span><span class="n">model_mags_interval</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span> <span class="n">model_mags_interval</span><span class="p">,</span> <span class="n">log10y</span><span class="p">,</span> <span class="n">model_count</span><span class="p">,</span>
+        <span class="nb">int</span><span class="p">(</span><span class="n">dm_max</span><span class="o">/</span><span class="n">d_mag</span><span class="p">)</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">ones_like</span><span class="p">(</span><span class="n">count_array</span><span class="p">),</span> <span class="n">mag_cut</span><span class="p">,</span> <span class="n">R</span><span class="p">,</span> <span class="n">num_trials</span><span class="p">,</span> <span class="n">seed</span><span class="p">)</span>
+    <span class="n">np</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{}</span><span class="s1">/</span><span class="si">{}</span><span class="s1">/frac.npy&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">tri_folder</span><span class="p">,</span> <span class="n">filt</span><span class="p">),</span> <span class="n">Frac</span><span class="p">)</span>
+    <span class="n">np</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{}</span><span class="s1">/</span><span class="si">{}</span><span class="s1">/flux.npy&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">tri_folder</span><span class="p">,</span> <span class="n">filt</span><span class="p">),</span> <span class="n">Flux</span><span class="p">)</span>
+    <span class="n">np</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{}</span><span class="s1">/</span><span class="si">{}</span><span class="s1">/offset.npy&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">tri_folder</span><span class="p">,</span> <span class="n">filt</span><span class="p">),</span> <span class="n">offset</span><span class="p">)</span>
+    <span class="n">np</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{}</span><span class="s1">/</span><span class="si">{}</span><span class="s1">/cumulative.npy&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">tri_folder</span><span class="p">,</span> <span class="n">filt</span><span class="p">),</span> <span class="n">cumulative</span><span class="p">)</span>
+    <span class="n">np</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{}</span><span class="s1">/</span><span class="si">{}</span><span class="s1">/fourier.npy&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">tri_folder</span><span class="p">,</span> <span class="n">filt</span><span class="p">),</span> <span class="n">fourieroffset</span><span class="p">)</span>
+    <span class="n">np</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{}</span><span class="s1">/</span><span class="si">{}</span><span class="s1">/N.npy&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">tri_folder</span><span class="p">,</span> <span class="n">filt</span><span class="p">),</span> <span class="n">count_array</span><span class="p">)</span>
+    <span class="n">np</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{}</span><span class="s1">/</span><span class="si">{}</span><span class="s1">/mag.npy&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">tri_folder</span><span class="p">,</span> <span class="n">filt</span><span class="p">),</span> <span class="n">mag_array</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">count_array</span></div>
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../f-modindex.html" title="Fortran Module Index"
+             >fortran modules</a> |</li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">macauff</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../index.html" >Module code</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">macauff.perturbation_auf</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2021, Tom J Wilson.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 3.5.4.
+    </div>
+  </body>
+</html>

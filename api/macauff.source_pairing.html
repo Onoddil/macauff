@@ -1,0 +1,149 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>source_pairing &#8212; macauff</title>
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pyramid.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../_static/graphviz.css" />
+    <script id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="CrossMatch" href="macauff.CrossMatch.html" />
+    <link rel="prev" title="set_list" href="macauff.set_list.html" />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Neuton&amp;subset=latin" type="text/css" media="screen" charset="utf-8" />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Nobile:regular,italic,bold,bolditalic&amp;subset=latin" type="text/css" media="screen" charset="utf-8" />
+<!--[if lte IE 6]>
+<link rel="stylesheet" href="../_static/ie6.css" type="text/css" media="screen" charset="utf-8" />
+<![endif]-->
+
+  </head><body>
+
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../f-modindex.html" title="Fortran Module Index"
+             >fortran modules</a> |</li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="macauff.CrossMatch.html" title="CrossMatch"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="macauff.set_list.html" title="set_list"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">macauff</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../macauff.html" accesskey="U"><code class="docutils literal notranslate"><span class="pre">macauff</span></code> Documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">source_pairing</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="source-pairing">
+<h1>source_pairing<a class="headerlink" href="#source-pairing" title="Permalink to this headline">¶</a></h1>
+<dl class="py function">
+<dt id="macauff.source_pairing">
+<code class="sig-prename descclassname"><span class="pre">macauff.</span></code><code class="sig-name descname"><span class="pre">source_pairing</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">joint_folder_path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">a_cat_folder_path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">b_cat_folder_path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">a_auf_folder_path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">b_auf_folder_path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">a_filt_names</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">b_filt_names</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">a_auf_pointings</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">b_auf_pointings</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rho</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">drho</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_fracs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mem_chunk_num</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_pool</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/macauff/counterpart_pairing.html#source_pairing"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#macauff.source_pairing" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to iterate over all grouped islands of sources, calculating the
+probabilities of all permutations of matches and deriving the most likely
+counterparts for sources in the two catalogues.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>joint_folder_path</strong><span class="classifier">string</span></dt><dd><p>Folder in which all common match files are stored for this crossmatch.</p>
+</dd>
+<dt><strong>a_cat_folder_path</strong><span class="classifier">string</span></dt><dd><p>Folder in which the “a” catalogue input catalogues are stored.</p>
+</dd>
+<dt><strong>b_cat_folder_path</strong><span class="classifier">string</span></dt><dd><p>Folder where catalogue “b” files are located.</p>
+</dd>
+<dt><strong>a_auf_folder_path</strong><span class="classifier">string</span></dt><dd><p>Folder where catalogue “a” perturbation AUF component files were saved
+previously.</p>
+</dd>
+<dt><strong>b_auf_folder_path</strong><span class="classifier">string</span></dt><dd><p>Folder containing catalogue “b” perturbation AUF component files.</p>
+</dd>
+<dt><strong>a_filt_names</strong><span class="classifier">numpy.ndarray or list of strings</span></dt><dd><p>Array or list containing names of the filters used in catalogue “a”.</p>
+</dd>
+<dt><strong>b_filt_names</strong><span class="classifier">numpy.ndarray or list of strings</span></dt><dd><p>Array or list of catalogue “b” filter names.</p>
+</dd>
+<dt><strong>a_auf_pointings</strong><span class="classifier">numpy.ndarray</span></dt><dd><p>Array of celestial coordinates indicating the locations used in the
+simulations of perturbation AUFs for catalogue “a”.</p>
+</dd>
+<dt><strong>b_auf_pointings</strong><span class="classifier">numpy.ndarray</span></dt><dd><p>Sky coordinates of locations of catalogue “b” perturbation AUF
+component simulations.</p>
+</dd>
+<dt><strong>rho</strong><span class="classifier">numpy.ndarray</span></dt><dd><p>Array of fourier-space values, used in the convolution of PDFs.</p>
+</dd>
+<dt><strong>drho</strong><span class="classifier">numpy.ndarray</span></dt><dd><p>The spacings between the <code class="xref py py-obj docutils literal notranslate"><span class="pre">rho</span></code> array elements.</p>
+</dd>
+<dt><strong>n_fracs</strong><span class="classifier">integer</span></dt><dd><p>The number of relative contamination fluxes previously considered
+when calculating the probability of a source being contaminated by
+a perturbing source brighter than a given flux.</p>
+</dd>
+<dt><strong>mem_chunk_num</strong><span class="classifier">integer</span></dt><dd><p>Number of sub-arrays to break loading of main catalogue into, to
+reduce the amount of memory used.</p>
+</dd>
+<dt><strong>n_pool</strong><span class="classifier">integer</span></dt><dd><p>The number of <code class="xref py py-obj docutils literal notranslate"><span class="pre">multiprocessing</span></code> parallel processes to break island
+matches down into.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../f-modindex.html" title="Fortran Module Index"
+             >fortran modules</a> |</li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="macauff.CrossMatch.html" title="CrossMatch"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="macauff.set_list.html" title="set_list"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">macauff</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../macauff.html" ><code class="docutils literal notranslate"><span class="pre">macauff</span></code> Documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">source_pairing</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2021, Tom J Wilson.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 3.5.4.
+    </div>
+  </body>
+</html>
